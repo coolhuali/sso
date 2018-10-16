@@ -31,6 +31,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <cas.version>5.1.6</cas.version>
+		<mysql.driver.version>5.1.30</mysql.driver.version>
         <springboot.version>1.5.3.RELEASE</springboot.version>
         <spring-cloud.version>Dalston.SR4</spring-cloud.version>
         <java.cas.client.version>3.4.1</java.cas.client.version>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ 版权所有.(c)2008-2017. 卡尔科技工作室
+  -->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/jdbc
+       http://www.springframework.org/schema/jdbc/spring-jdbc.xsd"
+>
+
+    <!--生产环境数据库进行用户的数据验证
+    <jdbc:initialize-database></jdbc:initialize-database> 
+    
+    <bean class="org.jasig.cas.adaptors.jdbc.QueryDatabaseAuthenticationHandler">
+	      <property name="dataSource" ref="dataSource"></property>
+	      <property name="sql" value="select password from sys_user where login_namet=?"></property>
+	      <property name="passwordEncoder" ref="MD5PasswordEncoder"></property>
+	</bean>
+	<bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+	   <property name="driverClassName"><value>com.mysql.jdbc.Driver</value></property>
+	   <property name="url"><value>jdbc:mysql://127.0.0.1:3306/jeesite?useUnicode=true&amp;characterEncoding=utf8&amp;autoReconnect=true&amp;rewriteBatchedStatements=true</value></property>
+	   <property name="username"><value>root</value></property>
+	   <property name="password"><value>yztcsoft</value></property>
+	</bean>
+	 
+	<bean id="MD5PasswordEncoder" class="org.jasig.cas.authentication.handler.DefaultPasswordEncoder">
+	    <constructor-arg index="0">
+	        <value>MD5</value>
+	    </constructor-arg>
+	</bean> -->
+</beans>
