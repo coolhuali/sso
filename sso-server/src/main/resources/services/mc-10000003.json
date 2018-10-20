@@ -1,0 +1,14 @@
+{
+  "@class": "org.apereo.cas.services.RegexRegisteredService",
+  "serviceId" : "^(https|imaps|http)://mc.xqqcloud.com.*",
+  "name": "client-mc",
+  "id": 10000003,
+  "description": "Client-mc service",
+  "evaluationOrder": 11,
+  "theme":"mc",
+  "logoutUrl": "http://mc.xqqcloud.com/mc/logout",
+  "attributeReleasePolicy" : {
+    "@class" : "org.apereo.cas.services.ReturnAllowedAttributeReleasePolicy",
+    "allowedAttributes" : [ "java.util.ArrayList", [ "school_multi", "email" ] ]
+  }
+}

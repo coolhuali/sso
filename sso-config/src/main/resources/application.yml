@@ -10,14 +10,14 @@ spring:
   profiles:
     active:
       - native
-      - dev
+      - server
   application:
     name: sso-config
 
 
 ---
 spring:
-  profiles: dev
+  profiles: server
   boot:
     admin:
       url: http://localhost:8444/

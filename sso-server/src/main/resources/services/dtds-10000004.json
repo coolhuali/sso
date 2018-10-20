@@ -1,0 +1,14 @@
+{
+  "@class": "org.apereo.cas.services.RegexRegisteredService",
+  "serviceId" : "^(https|imaps|http)://dtds.xqqcloud.com.*",
+  "name": "client-mc",
+  "id": 10000004,
+  "description": "Client-demo service",
+  "evaluationOrder": 12,
+  "theme":"dtds",
+  "logoutUrl": "http://dtds.xqqcloud.com/yztc_weixin/logout",
+  "attributeReleasePolicy" : {
+    "@class" : "org.apereo.cas.services.ReturnAllowedAttributeReleasePolicy",
+    "allowedAttributes" : [ "java.util.ArrayList", [ "school_multi", "email" ] ]
+  }
+}

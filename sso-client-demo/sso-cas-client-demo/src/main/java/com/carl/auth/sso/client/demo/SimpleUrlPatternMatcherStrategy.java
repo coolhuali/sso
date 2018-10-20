@@ -5,6 +5,7 @@
 package com.carl.auth.sso.client.demo;
 
 import org.jasig.cas.client.authentication.UrlPatternMatcherStrategy;
+import org.jasig.cas.client.session.SingleSignOutHttpSessionListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +25,6 @@ public class SimpleUrlPatternMatcherStrategy implements UrlPatternMatcherStrateg
 
     @Override
     public void setPattern(String pattern) {
-
+        SingleSignOutHttpSessionListener d = new SingleSignOutHttpSessionListener();
     }
 }
