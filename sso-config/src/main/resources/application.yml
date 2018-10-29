@@ -1,5 +1,5 @@
 logging:
-  file: "logs/config/sso-config.log"
+  file: "/mnt/log/application/sso-config/sso-config.log"
 info:
   name : "配置中心"
 
