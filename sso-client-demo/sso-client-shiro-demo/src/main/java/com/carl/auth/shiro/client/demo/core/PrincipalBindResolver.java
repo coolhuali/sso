@@ -5,13 +5,8 @@
  * 本内容为保密信息，仅限本公司内部使用。
  * 非经本公司书面许可，任何人不得外泄或用于其他目的。
  */
-
-
-
 package com.carl.auth.shiro.client.demo.core;
-
 import io.buji.pac4j.subject.Pac4jPrincipal;
-
 /**
  * 判断用户是否已经绑定
  *
@@ -27,7 +22,6 @@ public interface PrincipalBindResolver {
      * @return
      */
     boolean isBind(String id);
-
     /**
      * 把当前用户绑定到实际的用户数
      *

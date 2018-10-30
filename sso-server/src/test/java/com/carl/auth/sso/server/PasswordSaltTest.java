@@ -5,18 +5,13 @@
  * 本内容为保密信息，仅限本公司内部使用。
  * 非经本公司书面许可，任何人不得外泄或用于其他目的。
  */
-
-
-
 package com.carl.auth.sso.server;
-
 import org.apache.shiro.crypto.hash.ConfigurableHashService;
 import org.apache.shiro.crypto.hash.DefaultHashService;
 import org.apache.shiro.crypto.hash.HashRequest;
 import org.apache.shiro.util.ByteSource;
 import org.junit.Assert;
 import org.junit.Test;
-
 /**
  * @author Carl
  * @date 2017/9/12

@@ -5,11 +5,7 @@
  * 本内容为保密信息，仅限本公司内部使用。
  * 非经本公司书面许可，任何人不得外泄或用于其他目的。
  */
-
-
-
 package com.carl.auth.shiro.client.demo.aspect;
-
 import com.carl.auth.shiro.client.demo.core.ClientStrategy;
 import com.carl.auth.shiro.client.demo.core.ClientStrategyFactory;
 import io.buji.pac4j.subject.Pac4jPrincipal;
@@ -23,10 +19,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-
 import javax.servlet.http.HttpServletRequest;
 import java.security.Principal;
-
 /**
  * @author Carl
  * @date 2017/10/8
@@ -36,10 +30,8 @@ import java.security.Principal;
 @Component
 public class ThirdPartyLoginAspect {
     private Logger logger = LoggerFactory.getLogger(this.getClass());
-
     @Autowired
     private ClientStrategyFactory clientStrategyFactory;
-
     /**
      * 定义一个切入点.
      * <p>
@@ -59,11 +51,9 @@ public class ThirdPartyLoginAspect {
      * <p>
      * ~ .. 匹配任意数量的参数.
      */
-
     @Pointcut("execution(public * com.carl.auth..*.controller.IndexController.*(..))")
     public void loginHandle() {
     }
-
     @Before("loginHandle()")
     public void doBefore(JoinPoint pjp) throws Throwable {
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
@@ -71,13 +61,11 @@ public class ThirdPartyLoginAspect {
         if (principal != null && principal instanceof Pac4jPrincipal) {
             logger.debug("准备判断用户绑定状态");
             Pac4jPrincipal pac4jPrincipal = (Pac4jPrincipal) principal;
-
             //获取认证客户端
             String clientName = (String) pac4jPrincipal.getProfile().getAttribute("clientName");
             //获取客户端策略
             ClientStrategy clientStrategy = clientStrategyFactory.getClientStrategy().get(clientName);
             if (clientStrategy != null) {
-
                 //判断该客户端是否已经有绑定用户
                 if (!clientStrategy.isBind(pac4jPrincipal)) {
                     logger.debug("用户[" + pac4jPrincipal.getProfile().getId() + "]通过" + clientStrategy.name() + "登录尚未绑定");

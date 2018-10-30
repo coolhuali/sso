@@ -5,15 +5,9 @@
  * 本内容为保密信息，仅限本公司内部使用。
  * 非经本公司书面许可，任何人不得外泄或用于其他目的。
  */
-
-
-
 package com.carl.sso.support.validate.imp.mail;
-
 import com.carl.sso.support.validate.ValidateCredential;
-
 import javax.validation.constraints.NotNull;
-
 /**
  * @author Carl
  * @date 2017/11/2
@@ -22,7 +16,6 @@ import javax.validation.constraints.NotNull;
 public class MailValidateCredential extends MailCredential implements ValidateCredential {
     //校验码
     private String code;
-
     /**
      * @param sessionId
      * @param mail
@@ -32,12 +25,10 @@ public class MailValidateCredential extends MailCredential implements ValidateCr
         super(sessionId, mail, busId);
         this.code = code;
     }
-
     @Override
     public Object data() {
         return code;
     }
-
     @Override
     public String id() {
         return super.id();

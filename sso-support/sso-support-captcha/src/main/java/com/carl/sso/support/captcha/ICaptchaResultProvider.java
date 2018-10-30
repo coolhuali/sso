@@ -5,14 +5,7 @@
  * 本内容为保密信息，仅限本公司内部使用。
  * 非经本公司书面许可，任何人不得外泄或用于其他目的。
  */
-
-
-
-
 package com.carl.sso.support.captcha;
-
-
-
 /**
  * 验证码结果提供者
  *
@@ -28,14 +21,12 @@ public interface ICaptchaResultProvider<T, S>{
      * @param s
      */
     void store(T t, S s);
-
     /**
      * 在T中提供出s
      * @param t
      * @return
      */
     S get(T t);
-
     /**
      * 校验
      * @param store 持久化对象
@@ -44,4 +35,3 @@ public interface ICaptchaResultProvider<T, S>{
      */
     boolean validate(T store, S code);
 }
-

@@ -5,22 +5,14 @@
  * 本内容为保密信息，仅限本公司内部使用。
  * 非经本公司书面许可，任何人不得外泄或用于其他目的。
  */
-
-
-
-
-
 package com.carl.sso.support.single.service;
-
 import org.apereo.cas.CentralAuthenticationService;
 import org.apereo.cas.authentication.Authentication;
 import org.apereo.cas.ticket.Ticket;
 import org.apereo.cas.ticket.TicketGrantingTicket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.Collection;
-
 /**
  * 登出触发器
  *
@@ -30,11 +22,9 @@ import java.util.Collection;
 public class TriggerLogoutService {
     private static final Logger LOGGER = LoggerFactory.getLogger(TriggerLogoutService.class);
     private CentralAuthenticationService service;
-
     public TriggerLogoutService(CentralAuthenticationService service) {
         this.service = service;
     }
-
     /**
      * 触发其他用户退出
      *
@@ -53,13 +43,10 @@ public class TriggerLogoutService {
             } else {
                 return false;
             }
-
         });
-
         if (tickets != null && tickets.size() > 0) {
             LOGGER.info(String.format("[%s]强制强制注销%s", id, tickets.size()));
         }
-
         //发出注销
         for (Ticket ticket : tickets) {
             service.destroyTicketGrantingTicket(ticket.getId());

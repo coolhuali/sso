@@ -5,13 +5,8 @@
  * 本内容为保密信息，仅限本公司内部使用。
  * 非经本公司书面许可，任何人不得外泄或用于其他目的。
  */
-
-
-
 package com.carl.sso.support.validate;
-
 import java.io.Serializable;
-
 /**
  * @author Carl
  * @date 2017/11/2

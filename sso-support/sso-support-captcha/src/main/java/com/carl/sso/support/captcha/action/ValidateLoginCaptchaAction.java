@@ -5,11 +5,7 @@
  * 本内容为保密信息，仅限本公司内部使用。
  * 非经本公司书面许可，任何人不得外泄或用于其他目的。
  */
-
-
-
 package com.carl.sso.support.captcha.action;
-
 import com.carl.sso.support.auth.UsernamePasswordSysCredential;
 import com.carl.sso.support.captcha.ICaptchaResultProvider;
 import org.apereo.cas.authentication.Credential;
@@ -21,10 +17,8 @@ import org.springframework.binding.message.MessageContext;
 import org.springframework.webflow.action.AbstractAction;
 import org.springframework.webflow.execution.Event;
 import org.springframework.webflow.execution.RequestContext;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-
 /**
  * 登录校验码
  *
@@ -32,23 +26,17 @@ import javax.servlet.http.HttpSession;
  * @date 2017/11/18
  */
 public class ValidateLoginCaptchaAction extends AbstractAction {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(ValidateLoginCaptchaAction.class);
-
     //验证码存储器
     private ICaptchaResultProvider<HttpSession, String> captchaResultProvider;
-
     private static final String CODE = "captchaError";
-
     public ValidateLoginCaptchaAction(ICaptchaResultProvider<HttpSession, String> captchaResultProvider) {
         this.captchaResultProvider = captchaResultProvider;
     }
-
     /**
      * 前端验证码
      */
     public static final String CODE_PARAM = "validateCode";
-
     @Override
     protected Event doExecute(RequestContext context) throws Exception {
         Credential credential = WebUtils.getCredential(context);
@@ -68,7 +56,6 @@ public class ValidateLoginCaptchaAction extends AbstractAction {
         }
         return null;
     }
-
     /**
      * 是否开启验证码
      * @return
@@ -76,7 +63,6 @@ public class ValidateLoginCaptchaAction extends AbstractAction {
     private boolean isEnable() {
         return true;
     }
-
     /**
      * 跳转到错误页
      * @param requestContext

@@ -5,11 +5,7 @@
  * 本内容为保密信息，仅限本公司内部使用。
  * 非经本公司书面许可，任何人不得外泄或用于其他目的。
  */
-
-
-
 package com.carl.sso.support.captcha.config;
-
 import org.apereo.cas.configuration.CasConfigurationProperties;
 import org.apereo.cas.web.flow.AbstractCasWebflowConfigurer;
 import org.apereo.cas.web.flow.CasWebflowConstants;
@@ -20,10 +16,8 @@ import org.springframework.webflow.engine.Flow;
 import org.springframework.webflow.engine.ViewState;
 import org.springframework.webflow.execution.Action;
 import org.springframework.webflow.engine.builder.support.FlowBuilderServices;
-
 import java.util.ArrayList;
 import java.util.List;
-
 /**
  * @author Carl
  * @date 2017/10/30
@@ -33,17 +27,14 @@ public class ValidateWebflowConfigurer extends AbstractCasWebflowConfigurer {
      * 校验码动作
      */
     public static final String VALIDATE_CAPTCHA_ACTION = "validateCaptchaAction";
-
     public ValidateWebflowConfigurer(FlowBuilderServices flowBuilderServices, FlowDefinitionRegistry loginFlowDefinitionRegistry, ApplicationContext applicationContext, CasConfigurationProperties casProperties) {
         super(flowBuilderServices, loginFlowDefinitionRegistry);
     }
-
     @Override
     protected void doInitialize() throws Exception {
         //createPasswordResetValidateFlow();
         createLoginValidateValidateFlow();
     }
-
     /**
      * 登录校验流程
      */
@@ -54,14 +45,11 @@ public class ValidateWebflowConfigurer extends AbstractCasWebflowConfigurer {
             final List<Action> currentActions = new ArrayList<>();
             state.getActionList().forEach(currentActions::add);
             currentActions.forEach(a -> state.getActionList().remove(a));
-
             state.getActionList().add(createEvaluateAction("validateLoginCaptchaAction"));
             currentActions.forEach(a -> state.getActionList().add(a));
-
             state.getTransitionSet().add(createTransition("captchaError", CasWebflowConstants.STATE_ID_INIT_LOGIN_FORM));
         }
     }
-
     /**
      * 发送邮箱前输入验证码流程
      */

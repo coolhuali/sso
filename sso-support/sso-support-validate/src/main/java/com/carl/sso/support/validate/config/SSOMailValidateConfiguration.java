@@ -5,11 +5,7 @@
  * 本内容为保密信息，仅限本公司内部使用。
  * 非经本公司书面许可，任何人不得外泄或用于其他目的。
  */
-
-
-
 package com.carl.sso.support.validate.config;
-
 import com.carl.sso.support.validate.configuration.SSOValidateConfigurationProperties;
 import com.carl.sso.support.validate.core.DefaultValidateService;
 import com.carl.sso.support.validate.imp.mail.MailInformativeGenerator;
@@ -26,7 +22,6 @@ import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
-
 /**
  * 邮箱校验服务，当配置<code>sso.validate.mail.enable=true</code>
  * 生效
@@ -42,17 +37,14 @@ public class SSOMailValidateConfiguration {
     private static final Logger LOGGER = LoggerFactory.getLogger(SSOMailValidateConfiguration.class);
     @Autowired
     private SSOValidateConfigurationProperties properties;
-
     @Autowired
     private JavaMailSender mailSender;
-
     @Bean
     @ConditionalOnMissingBean(name = "mailInformativeGenerator")
     @RefreshScope
     public MailInformativeGenerator mailInformativeGenerator() {
         return new MailInformativeGenerator(properties.getMail());
     }
-
     @Bean
     @ConditionalOnMissingBean(name = "mailStore")
     @RefreshScope
@@ -60,7 +52,6 @@ public class SSOMailValidateConfiguration {
         LOGGER.warn("验证码内存存储，应考虑放于数据库或缓存设备");
         return new MailMemoryStore();
     }
-
     @Bean
     @RefreshScope
     @ConditionalOnMissingBean(name = "validateMailSender")
@@ -68,13 +59,11 @@ public class SSOMailValidateConfiguration {
         LOGGER.info("邮件发送验证码");
         return new MailSender(mailSender);
     }
-
     @Bean
     @ConditionalOnMissingBean(name = "mailValidator")
     public MailValidator mailValidator() {
         return new MailValidator(mailStore());
     }
-
     @Bean
     @ConditionalOnMissingBean(name = "defaultValidateService")
     @RefreshScope

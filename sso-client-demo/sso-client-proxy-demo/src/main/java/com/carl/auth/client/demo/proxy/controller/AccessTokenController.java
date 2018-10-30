@@ -5,11 +5,7 @@
  * 本内容为保密信息，仅限本公司内部使用。
  * 非经本公司书面许可，任何人不得外泄或用于其他目的。
  */
-
-
-
 package com.carl.auth.client.demo.proxy.controller;
-
 import com.github.scribejava.core.extractors.OAuth2AccessTokenExtractor;
 import com.github.scribejava.core.model.OAuth2AccessToken;
 import com.github.scribejava.core.model.OAuthConstants;
@@ -22,11 +18,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
-
 import javax.servlet.http.HttpServletResponse;
 import java.util.HashMap;
 import java.util.Map;
-
 /**
  * @author Carl
  * @date 2017/10/21
@@ -36,10 +30,8 @@ import java.util.Map;
 @RequestMapping("/token")
 public class AccessTokenController {
     private OAuth2AccessTokenExtractor tokenExtractor = OAuth2AccessTokenExtractor.instance();
-
     @Autowired
     private RestTemplate restTemplate;
-
     /**
      * qq代理转发
      *
@@ -55,19 +47,14 @@ public class AccessTokenController {
             HttpServletResponse response) throws Exception {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
         MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
-
         map.add(OAuthConstants.CLIENT_ID, client_id);
         map.add(OAuthConstants.CLIENT_SECRET, client_secret);
         map.add(OAuthConstants.CODE, code);
         map.add(OAuthConstants.REDIRECT_URI, redirect_uri);
         map.add(OAuthConstants.GRANT_TYPE, authorization_code);
-
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
         ResponseEntity<String> resp = restTemplate.exchange("https://graph.qq.com/oauth2.0/token", HttpMethod.POST, request, String.class);
-
-
         response.setContentType("application/json");
         OAuth2AccessToken token = tokenExtractor.extract(new Response(
                 resp.getStatusCodeValue(),
@@ -75,7 +62,6 @@ public class AccessTokenController {
                 resp.getHeaders().toSingleValueMap(),
                 resp.getBody(), null
         ));
-
         //返回结果
         Map<String, Object> res = new HashMap<>();
         res.put("access_token", token.getAccessToken());

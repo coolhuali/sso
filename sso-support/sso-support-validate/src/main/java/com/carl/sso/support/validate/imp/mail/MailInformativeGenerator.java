@@ -5,14 +5,9 @@
  * 本内容为保密信息，仅限本公司内部使用。
  * 非经本公司书面许可，任何人不得外泄或用于其他目的。
  */
-
-
-
 package com.carl.sso.support.validate.imp.mail;
-
 import com.carl.sso.support.validate.InformativeGenerator;
 import com.carl.sso.support.validate.configuration.MailProperties;
-
 /**
  * @author Carl
  * @date 2017/11/2
@@ -20,11 +15,9 @@ import com.carl.sso.support.validate.configuration.MailProperties;
  */
 public class MailInformativeGenerator implements InformativeGenerator<MailInformative, MailCredential> {
     private MailProperties properties;
-
     public MailInformativeGenerator(MailProperties properties) {
         this.properties = properties;
     }
-
     @Override
     public MailInformative generate(MailCredential mailCredential) {
         //生成随机码
@@ -38,7 +31,6 @@ public class MailInformativeGenerator implements InformativeGenerator<MailInform
                 .setToMail(mailCredential.getMail())
                 .setId(mailCredential.id())
                 .setSubject(properties.getSubject());
-
         return informative;
     }
 }

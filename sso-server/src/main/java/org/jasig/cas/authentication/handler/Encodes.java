@@ -5,19 +5,14 @@
  * 本内容为保密信息，仅限本公司内部使用。
  * 非经本公司书面许可，任何人不得外泄或用于其他目的。
  */
-
 package org.jasig.cas.authentication.handler;
-
-  
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringEscapeUtils;
-
 /**
  * 封装各种格式的编码解码工具类.
  * 1.Commons-Codec的 hex/base64 编码
@@ -28,17 +23,14 @@ import org.apache.commons.lang3.StringEscapeUtils;
  * @version 2013-01-15
  */
 public class Encodes {
-
 	private static final String DEFAULT_URL_ENCODING = "UTF-8";
 	private static final char[] BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".toCharArray();
-
 	/**
 	 * Hex编码.
 	 */
 	public static String encodeHex(byte[] input) {
 		return new String(Hex.encodeHex(input));
 	}
-
 	/**
 	 * Hex解码.
 	 */
@@ -49,14 +41,12 @@ public class Encodes {
 			throw unchecked(e);
 		}
 	}
-
 	/**
 	 * Base64编码.
 	 */
 	public static String encodeBase64(byte[] input) {
 		return new String(Base64.encodeBase64(input));
 	}
-	
 	/**
 	 * Base64编码.
 	 */
@@ -67,21 +57,18 @@ public class Encodes {
 			return "";
 		}
 	}
-
 //	/**
 //	 * Base64编码, URL安全(将Base64中的URL非法字符'+'和'/'转为'-'和'_', 见RFC3548).
 //	 */
 //	public static String encodeUrlSafeBase64(byte[] input) {
 //		return Base64.encodeBase64URLSafe(input);
 //	}
-
 	/**
 	 * Base64解码.
 	 */
 	public static byte[] decodeBase64(String input) {
 		return Base64.decodeBase64(input.getBytes());
 	}
-	
 	/**
 	 * Base64解码.
 	 */
@@ -92,7 +79,6 @@ public class Encodes {
 			return "";
 		}
 	}
-
 	/**
 	 * Base62编码。
 	 */
@@ -103,35 +89,30 @@ public class Encodes {
 		}
 		return new String(chars);
 	}
-
 	/**
 	 * Html 转码.
 	 */
 	public static String escapeHtml(String html) {
 		return StringEscapeUtils.escapeHtml4(html);
 	}
-
 	/**
 	 * Html 解码.
 	 */
 	public static String unescapeHtml(String htmlEscaped) {
 		return StringEscapeUtils.unescapeHtml4(htmlEscaped);
 	}
-
 	/**
 	 * Xml 转码.
 	 */
 	public static String escapeXml(String xml) {
 		return StringEscapeUtils.escapeXml10(xml);
 	}
-
 	/**
 	 * Xml 解码.
 	 */
 	public static String unescapeXml(String xmlEscaped) {
 		return StringEscapeUtils.unescapeXml(xmlEscaped);
 	}
-
 	/**
 	 * URL 编码, Encode默认为UTF-8. 
 	 */
@@ -142,12 +123,10 @@ public class Encodes {
 			throw unchecked(e);
 		}
 	}
-
 	/**
 	 * URL 解码, Encode默认为UTF-8. 
 	 */
 	public static String urlDecode(String part) {
-
 		try {
 			return URLDecoder.decode(part, DEFAULT_URL_ENCODING);
 		} catch (UnsupportedEncodingException e) {

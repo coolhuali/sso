@@ -5,11 +5,7 @@
  * 本内容为保密信息，仅限本公司内部使用。
  * 非经本公司书面许可，任何人不得外泄或用于其他目的。
  */
-
-
-
 package com.carl.sso.support.validate;
-
 /**
  * 验证存储器
  *
@@ -22,7 +18,6 @@ public interface IStore<T extends Informative, I extends Credential> {
      * 保存验证数据
      */
     void save(T t);
-
     /**
      * 获取验证数据
      *
@@ -30,7 +25,6 @@ public interface IStore<T extends Informative, I extends Credential> {
      * @return
      */
     T get(I i);
-
     /**
      *
      * 移除
