@@ -1,11 +1,12 @@
 /*
- * Copyright 2018 - YZTC
- * http://www.zxpost.com
- * 本公司保留所有下述内容的权利。
- * 本内容为保密信息，仅限本公司内部使用。
- * 非经本公司书面许可，任何人不得外泄或用于其他目的。
- */
+ * Copyright© 2013-2018 YZTC 
+ * Author zhenghl 
+ * 本公司保留所有下述内容的权利; 
+ * 本内容为保密信息，仅限本公司内部使用; 
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的; 
+*/
 package com.carl.sso.support.captcha.action;
+
 import com.carl.sso.support.auth.UsernamePasswordSysCredential;
 import com.carl.sso.support.captcha.ICaptchaResultProvider;
 import org.apereo.cas.authentication.Credential;
@@ -19,6 +20,7 @@ import org.springframework.webflow.execution.Event;
 import org.springframework.webflow.execution.RequestContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+
 /**
  * 登录校验码
  *
@@ -27,44 +29,48 @@ import javax.servlet.http.HttpSession;
  */
 public class ValidateLoginCaptchaAction extends AbstractAction {
     private static final Logger LOGGER = LoggerFactory.getLogger(ValidateLoginCaptchaAction.class);
-    //验证码存储器
     private ICaptchaResultProvider<HttpSession, String> captchaResultProvider;
     private static final String CODE = "captchaError";
+
     public ValidateLoginCaptchaAction(ICaptchaResultProvider<HttpSession, String> captchaResultProvider) {
         this.captchaResultProvider = captchaResultProvider;
     }
+
     /**
      * 前端验证码
      */
     public static final String CODE_PARAM = "validateCode";
+
     @Override
     protected Event doExecute(RequestContext context) throws Exception {
         Credential credential = WebUtils.getCredential(context);
-        //系统信息不为空才检测校验码
-        if(credential instanceof UsernamePasswordSysCredential && ((UsernamePasswordSysCredential) credential).getSystem() != null) {
+        if (credential instanceof UsernamePasswordSysCredential
+                && ((UsernamePasswordSysCredential) credential).getSystem() != null) {
             if (isEnable()) {
                 LOGGER.debug("开始校验登录校验码");
                 HttpServletRequest request = WebUtils.getHttpServletRequest();
                 HttpSession httpSession = request.getSession();
-                //校验码
                 String inCode = request.getParameter(CODE_PARAM);
-                //校验码失败跳转到登录页
-                if(!this.captchaResultProvider.validate(httpSession, inCode)) {
+                if (!this.captchaResultProvider.validate(httpSession, inCode)) {
                     return getError(context);
                 }
             }
         }
         return null;
     }
+
     /**
      * 是否开启验证码
+     * 
      * @return
      */
     private boolean isEnable() {
         return true;
     }
+
     /**
      * 跳转到错误页
+     * 
      * @param requestContext
      * @return
      */

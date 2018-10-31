@@ -1,11 +1,12 @@
 /*
- * Copyright 2018 - YZTC
- * http://www.zxpost.com
- * 本公司保留所有下述内容的权利。
- * 本内容为保密信息，仅限本公司内部使用。
- * 非经本公司书面许可，任何人不得外泄或用于其他目的。
- */
+ * Copyright© 2013-2018 YZTC 
+ * Author zhenghl 
+ * 本公司保留所有下述内容的权利; 
+ * 本内容为保密信息，仅限本公司内部使用; 
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的; 
+*/
 package com.carl.sso.support.captcha.config;
+
 import com.carl.sso.support.captcha.SessionCaptchaResultProvider;
 import com.carl.sso.support.captcha.action.CaptchaAwareFactory;
 import com.carl.sso.support.captcha.action.ValidateCaptchaAction;
@@ -26,6 +27,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.webflow.definition.registry.FlowDefinitionRegistry;
 import org.springframework.webflow.engine.builder.support.FlowBuilderServices;
 import org.springframework.webflow.execution.Action;
+
 /**
  * @author Carl
  * @date 2017/10/30
@@ -48,20 +50,25 @@ public class ValidateWebflowConfiguation {
     private SessionCaptchaResultProvider captchaResultProvider;
     @Autowired
     private PasswordManagementService passwordManagementService;
+
     @ConditionalOnMissingBean(name = "validateWebflowConfigurer")
     @RefreshScope
     @Bean
     public CasWebflowConfigurer validateWebflowConfigurer() {
-        ValidateWebflowConfigurer validateWebflowConfigurer = new ValidateWebflowConfigurer(flowBuilderServices, loginFlowDefinitionRegistry, applicationContext, casProperties);
+        ValidateWebflowConfigurer validateWebflowConfigurer = new ValidateWebflowConfigurer(flowBuilderServices,
+                loginFlowDefinitionRegistry, applicationContext, casProperties);
         return validateWebflowConfigurer;
     }
+
     @ConditionalOnMissingBean(name = "validateCaptchaAction")
     @Bean
     @RefreshScope
     public Action validateCaptchaAction() {
-        ValidateCaptchaAction validateCaptchaAction = new ValidateCaptchaAction(captchaResultProvider, captchaAwareFactory(), passwordManagementService);
+        ValidateCaptchaAction validateCaptchaAction = new ValidateCaptchaAction(captchaResultProvider,
+                captchaAwareFactory(), passwordManagementService);
         return validateCaptchaAction;
     }
+
     @ConditionalOnMissingBean(name = "validateLoginCaptchaAction")
     @Bean
     @RefreshScope
@@ -69,6 +76,7 @@ public class ValidateWebflowConfiguation {
         ValidateLoginCaptchaAction validateCaptchaAction = new ValidateLoginCaptchaAction(captchaResultProvider);
         return validateCaptchaAction;
     }
+
     @Bean
     public CaptchaAwareFactory captchaAwareFactory() {
         return new CaptchaAwareFactory();

@@ -1,0 +1,3511 @@
+<html>
+<head>
+<title>源码打印</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type = "text/css">
+body {font-family: "Courier New", sans-serif; font-size: 16px; color: black}
+.keyword {color: #000080; font-weight: bold}
+.comment {color: #008000}
+.literal {color: #0000ff}
+.keyword {color: black; font-weight: bold}
+.comment {color: #77797C}
+.literal {color: #007346; font-weight: bold}
+</style>
+</head>
+<body>
+<pre>
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">import</span> com.carl.auth.sso.config.SsoConfigApplication;
+<span class = "keyword">import</span> org.junit.Before;
+<span class = "keyword">import</span> org.junit.Test;
+<span class = "keyword">import</span> org.junit.runner.RunWith;
+<span class = "keyword">import</span> org.springframework.beans.factory.annotation.Autowired;
+<span class = "keyword">import</span> org.springframework.beans.factory.annotation.Value;
+<span class = "keyword">import</span> org.springframework.boot.test.context.SpringBootTest;
+<span class = "keyword">import</span> org.springframework.mail.SimpleMailMessage;
+<span class = "keyword">import</span> org.springframework.mail.javamail.JavaMailSender;
+<span class = "keyword">import</span> org.springframework.test.context.junit4.SpringRunner;
+<span class = "keyword">import</span> javax.mail.internet.MimeMessage;
+<span class = "comment">/**
+ * @author Carl
+ * @version 创建时间：2017/12/20
+ */</span>
+@RunWith(SpringRunner.<span class = "keyword">class</span>)
+@SpringBootTest(classes = SsoConfigApplication.<span class = "keyword">class</span>)
+<span class = "keyword">public</span> <span class = "keyword">class</span> MailTest {
+    @Autowired
+    <span class = "keyword">private</span> JavaMailSender mailSender;
+    @Value(<span class = "literal">"${spring.mail.username}"</span>)
+    <span class = "keyword">private</span> String mail;
+    @Test
+    <span class = "keyword">public</span> <span class = "keyword">void</span> connect() {
+        SimpleMailMessage message = <span class = "keyword">new</span> SimpleMailMessage();
+        message.setFrom(mail);
+        message.setTo(mail); //自己给自己发送邮件
+        message.setSubject(<span class = "literal">"主题：测试邮件"</span>);
+        message.setText(<span class = "literal">"测试邮件内容"</span>);
+        //可以进行测试
+<span class = "comment">//        mailSender.send(message);</span>
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.sso.config;
+<span class = "keyword">import</span> org.springframework.boot.SpringApplication;
+<span class = "keyword">import</span> org.springframework.boot.autoconfigure.SpringBootApplication;
+<span class = "keyword">import</span> org.springframework.cloud.config.server.EnableConfigServer;
+@SpringBootApplication
+@EnableConfigServer
+<span class = "keyword">public</span> <span class = "keyword">class</span> SsoConfigApplication {
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">void</span> main(String[] args) {
+        SpringApplication.run(SsoConfigApplication.<span class = "keyword">class</span>, args);
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.single.listener;
+<span class = "keyword">import</span> com.carl.sso.support.single.service.IUserIdObtainService;
+<span class = "keyword">import</span> com.carl.sso.support.single.service.TriggerLogoutService;
+<span class = "keyword">import</span> org.apereo.cas.support.events.ticket.CasTicketGrantingTicketCreatedEvent;
+<span class = "keyword">import</span> org.apereo.cas.ticket.TicketGrantingTicket;
+<span class = "keyword">import</span> org.springframework.context.event.EventListener;
+<span class = "keyword">import</span> org.springframework.scheduling.annotation.Async;
+<span class = "keyword">import</span> javax.validation.constraints.NotNull;
+<span class = "keyword">import</span> java.util.List;
+<span class = "comment">/**
+ * 识别事件然后删除
+ *
+ * @author Carl
+ * @version 创建时间：2017/11/29
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> TGTCreateEventListener {
+    <span class = "keyword">private</span> TriggerLogoutService logoutService;
+    <span class = "keyword">private</span> IUserIdObtainService service;
+    <span class = "keyword">public</span> TGTCreateEventListener(@NotNull TriggerLogoutService logoutService, @NotNull IUserIdObtainService service) {
+        <span class = "keyword">this</span>.logoutService = logoutService;
+        <span class = "keyword">this</span>.service = service;
+    }
+    @EventListener
+    @Async
+    <span class = "keyword">public</span> <span class = "keyword">void</span> onTgtCreateEvent(CasTicketGrantingTicketCreatedEvent event) {
+        TicketGrantingTicket ticketGrantingTicket = event.getTicketGrantingTicket();
+        String id = ticketGrantingTicket.getAuthentication().getPrincipal().getId();
+        String tgt = ticketGrantingTicket.getId();
+        String clientName = (String) ticketGrantingTicket.getAuthentication().getAttributes().get(<span class = "literal">"clientName"</span>);
+        //获取可以认证的id
+        List<String> authIds = service.obtain(clientName, id);
+        <span class = "keyword">if</span> (authIds != <span class = "keyword">null</span>) {
+            //循环触发登出
+            authIds.forEach(authId -> logoutService.triggerLogout(authId, tgt));
+        }
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.single.config;
+<span class = "keyword">import</span> com.carl.sso.support.single.listener.TGTCreateEventListener;
+<span class = "keyword">import</span> com.carl.sso.support.single.service.TriggerLogoutService;
+<span class = "keyword">import</span> com.carl.sso.support.single.service.UserIdObtainServiceImpl;
+<span class = "keyword">import</span> org.apereo.cas.CentralAuthenticationService;
+<span class = "keyword">import</span> org.apereo.cas.configuration.CasConfigurationProperties;
+<span class = "keyword">import</span> org.springframework.beans.factory.annotation.Autowired;
+<span class = "keyword">import</span> org.springframework.boot.context.properties.EnableConfigurationProperties;
+<span class = "keyword">import</span> org.springframework.context.annotation.Bean;
+<span class = "keyword">import</span> org.springframework.context.annotation.Configuration;
+<span class = "comment">/**
+ * 登出配置
+ *
+ * @author Carl
+ * @date 2017/11/29
+ */</span>
+@Configuration(<span class = "literal">"singleLogoutTriggerConfiguration"</span>)
+@EnableConfigurationProperties(CasConfigurationProperties.<span class = "keyword">class</span>)
+<span class = "keyword">public</span> <span class = "keyword">class</span> SingleLogoutTriggerConfiguration {
+    @Autowired
+    <span class = "keyword">private</span> CentralAuthenticationService centralAuthenticationService;
+    <span class = "comment">/**
+     * 触发登出服务
+     *
+     * @return 触发登出服务
+     */</span>
+    @Bean
+    <span class = "keyword">protected</span> TriggerLogoutService triggerLogoutService() {
+        <span class = "keyword">return</span> <span class = "keyword">new</span> TriggerLogoutService(centralAuthenticationService);
+    }
+    @Bean
+    //注册事件监听tgt的创建
+    <span class = "keyword">protected</span> TGTCreateEventListener tgtCreateEventListener() {
+        TGTCreateEventListener listener = <span class = "keyword">new</span> TGTCreateEventListener(triggerLogoutService(), <span class = "keyword">new</span> UserIdObtainServiceImpl());
+        <span class = "keyword">return</span> listener;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.single.service;
+<span class = "keyword">import</span> org.apereo.cas.CentralAuthenticationService;
+<span class = "keyword">import</span> org.apereo.cas.authentication.Authentication;
+<span class = "keyword">import</span> org.apereo.cas.ticket.Ticket;
+<span class = "keyword">import</span> org.apereo.cas.ticket.TicketGrantingTicket;
+<span class = "keyword">import</span> org.slf4j.Logger;
+<span class = "keyword">import</span> org.slf4j.LoggerFactory;
+<span class = "keyword">import</span> java.util.Collection;
+<span class = "comment">/**
+ * 登出触发器
+ *
+ * @author Carl
+ * @date 2017/11/29
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> TriggerLogoutService {
+    <span class = "keyword">private</span> <span class = "keyword">static</span> <span class = "keyword">final</span> Logger LOGGER = LoggerFactory.getLogger(TriggerLogoutService.<span class = "keyword">class</span>);
+    <span class = "keyword">private</span> CentralAuthenticationService service;
+    <span class = "keyword">public</span> TriggerLogoutService(CentralAuthenticationService service) {
+        <span class = "keyword">this</span>.service = service;
+    }
+    <span class = "comment">/**
+     * 触发其他用户退出
+     *
+     * @param id  用户id
+     * @param tgt 当前登录的tgt
+     */</span>
+    <span class = "keyword">public</span> <span class = "keyword">void</span> triggerLogout(String id, String tgt) {
+        //找出用户id，并且不为当前tgt的，这里应当考虑数据性能，直接筛选用户再筛选tgt
+        Collection<Ticket> tickets = <span class = "keyword">this</span>.service.getTickets(ticket -> {
+            <span class = "keyword">if</span>(ticket <span class = "keyword">instanceof</span> TicketGrantingTicket) {
+                TicketGrantingTicket t = ((TicketGrantingTicket)ticket).getRoot();
+                Authentication authentication = t.getAuthentication();
+                <span class = "keyword">return</span> t != <span class = "keyword">null</span> && authentication != <span class = "keyword">null</span>
+                        && authentication.getPrincipal() != <span class = "keyword">null</span> && id.equals(authentication.getPrincipal().getId())
+                        && !tgt.equals(t.getId());
+            } <span class = "keyword">else</span> {
+                <span class = "keyword">return</span> <span class = "keyword">false</span>;
+            }
+        });
+        <span class = "keyword">if</span> (tickets != <span class = "keyword">null</span> && tickets.size() > <span class = "literal">0</span>) {
+            LOGGER.info(String.format(<span class = "literal">"[%s]强制强制注销%s"</span>, id, tickets.size()));
+        }
+        //发出注销
+        <span class = "keyword">for</span> (Ticket ticket : tickets) {
+            service.destroyTicketGrantingTicket(ticket.getId());
+        }
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.single.service;
+<span class = "keyword">import</span> java.util.List;
+<span class = "comment">/**
+ * 用户认证识别器
+ *
+ * @author Carl
+ * @version 创建时间：2017/11/29
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">interface</span> IUserIdObtainService {
+    <span class = "comment">/**
+     * 通过登录方式查询其他的id
+     *
+     * @param clientName 登录方式
+     * @param id         用户id
+     * @return 所有用户id
+     */</span>
+    List<String> obtain(String clientName, String id);
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.single.service;
+<span class = "keyword">import</span> java.util.ArrayList;
+<span class = "keyword">import</span> java.util.List;
+<span class = "comment">/**
+ * @author Carl
+ * @version 创建时间：2017/11/29
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> UserIdObtainServiceImpl <span class = "keyword">implements</span> IUserIdObtainService {
+    <span class = "keyword">public</span> UserIdObtainServiceImpl() {
+    }
+    @Override
+    <span class = "keyword">public</span> List<String> obtain(String clientName, String id) {
+        //由于这里目前只做测试所以只返回当前的id，在正常的情况逻辑应该如下
+        //根据校验client以及登录的id找到其他同一个用户的所有校验id返回，如通过邮箱登录的id，通过github登录的id等等
+        List<String> ids = <span class = "keyword">new</span> ArrayList<>();
+        ids.add(id);
+        <span class = "keyword">return</span> ids;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.auth.handler;
+<span class = "keyword">import</span> com.carl.sso.support.auth.UsernamePasswordSysCredential;
+<span class = "keyword">import</span> org.apereo.cas.authentication.Credential;
+<span class = "keyword">import</span> org.apereo.cas.authentication.HandlerResult;
+<span class = "keyword">import</span> org.apereo.cas.authentication.PreventedException;
+<span class = "keyword">import</span> org.apereo.cas.authentication.handler.support.AbstractPreAndPostProcessingAuthenticationHandler;
+<span class = "keyword">import</span> org.apereo.cas.authentication.principal.PrincipalFactory;
+<span class = "keyword">import</span> org.apereo.cas.services.ServicesManager;
+<span class = "keyword">import</span> javax.security.auth.login.AccountNotFoundException;
+<span class = "keyword">import</span> java.security.GeneralSecurityException;
+<span class = "keyword">import</span> java.util.Collections;
+<span class = "comment">/**
+ * 用户名系统认证，只要是admin用户加上sso系统就允许通过
+ *
+ * @author Carl
+ * @date 2017/10/23
+ * @since 1.6.0
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> UsernamePasswordSystemAuthenticationHandler <span class = "keyword">extends</span> AbstractPreAndPostProcessingAuthenticationHandler {
+    <span class = "keyword">public</span> UsernamePasswordSystemAuthenticationHandler(String name, ServicesManager servicesManager, PrincipalFactory principalFactory, Integer order) {
+        <span class = "keyword">super</span>(name, servicesManager, principalFactory, order);
+    }
+    @Override
+    <span class = "keyword">protected</span> HandlerResult doAuthentication(Credential credential) <span class = "keyword">throws</span> GeneralSecurityException, PreventedException {
+        //当用户名为admin,并且system为sso即允许通过
+        UsernamePasswordSysCredential sysCredential = (UsernamePasswordSysCredential) credential;
+        <span class = "keyword">if</span> (<span class = "literal">"admin"</span>.equals(sysCredential.getUsername()) && <span class = "literal">"sso"</span>.equals(sysCredential.getSystem())) {
+            //这里可以自定义属性数据
+            <span class = "keyword">return</span> createHandlerResult(credential, <span class = "keyword">this</span>.principalFactory.createPrincipal(((UsernamePasswordSysCredential) credential).getUsername(), Collections.emptyMap()), <span class = "keyword">null</span>);
+        } <span class = "keyword">else</span> {
+            <span class = "keyword">throw</span> <span class = "keyword">new</span> AccountNotFoundException(<span class = "literal">"必须是admin用户才允许通过"</span>);
+        }
+    }
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">boolean</span> supports(Credential credential) {
+        <span class = "keyword">return</span> credential <span class = "keyword">instanceof</span> UsernamePasswordSysCredential;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.auth.config;
+<span class = "keyword">import</span> com.carl.sso.support.auth.CustomWebflowConfigurer;
+<span class = "keyword">import</span> org.apereo.cas.config.CasWebflowContextConfiguration;
+<span class = "keyword">import</span> org.apereo.cas.configuration.CasConfigurationProperties;
+<span class = "keyword">import</span> org.apereo.cas.web.flow.CasWebflowConfigurer;
+<span class = "keyword">import</span> org.springframework.beans.factory.annotation.Autowired;
+<span class = "keyword">import</span> org.springframework.beans.factory.annotation.Qualifier;
+<span class = "keyword">import</span> org.springframework.boot.autoconfigure.AutoConfigureBefore;
+<span class = "keyword">import</span> org.springframework.boot.context.properties.EnableConfigurationProperties;
+<span class = "keyword">import</span> org.springframework.context.annotation.Bean;
+<span class = "keyword">import</span> org.springframework.context.annotation.Configuration;
+<span class = "keyword">import</span> org.springframework.webflow.definition.registry.FlowDefinitionRegistry;
+<span class = "keyword">import</span> org.springframework.webflow.engine.builder.support.FlowBuilderServices;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/10/23
+ * @since 1.6.0
+ */</span>
+@Configuration(<span class = "literal">"customerAuthWebflowConfiguration"</span>)
+@EnableConfigurationProperties(CasConfigurationProperties.<span class = "keyword">class</span>)
+@AutoConfigureBefore(value = CasWebflowContextConfiguration.<span class = "keyword">class</span>)
+<span class = "keyword">public</span> <span class = "keyword">class</span> CustomerAuthWebflowConfiguration {
+    @Autowired
+    @Qualifier(<span class = "literal">"logoutFlowRegistry"</span>)
+    <span class = "keyword">private</span> FlowDefinitionRegistry logoutFlowRegistry;
+    @Autowired
+    @Qualifier(<span class = "literal">"loginFlowRegistry"</span>)
+    <span class = "keyword">private</span> FlowDefinitionRegistry loginFlowRegistry;
+    @Autowired
+    @Qualifier(<span class = "literal">"builder"</span>)
+    <span class = "keyword">private</span> FlowBuilderServices builder;
+    @Bean
+    <span class = "keyword">public</span> CasWebflowConfigurer customWebflowConfigurer() {
+        <span class = "keyword">final</span> CustomWebflowConfigurer c = <span class = "keyword">new</span> CustomWebflowConfigurer(builder, loginFlowRegistry);
+        c.setLogoutFlowDefinitionRegistry(logoutFlowRegistry);
+        <span class = "keyword">return</span> c;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.auth.config;
+<span class = "keyword">import</span> com.carl.sso.support.auth.handler.UsernamePasswordSystemAuthenticationHandler;
+<span class = "keyword">import</span> org.apereo.cas.authentication.AuthenticationEventExecutionPlan;
+<span class = "keyword">import</span> org.apereo.cas.authentication.AuthenticationEventExecutionPlanConfigurer;
+<span class = "keyword">import</span> org.apereo.cas.authentication.AuthenticationHandler;
+<span class = "keyword">import</span> org.apereo.cas.authentication.principal.PrincipalFactory;
+<span class = "keyword">import</span> org.apereo.cas.configuration.CasConfigurationProperties;
+<span class = "keyword">import</span> org.apereo.cas.services.ServicesManager;
+<span class = "keyword">import</span> org.springframework.beans.factory.annotation.Autowired;
+<span class = "keyword">import</span> org.springframework.beans.factory.annotation.Qualifier;
+<span class = "keyword">import</span> org.springframework.boot.context.properties.EnableConfigurationProperties;
+<span class = "keyword">import</span> org.springframework.context.annotation.Bean;
+<span class = "keyword">import</span> org.springframework.context.annotation.Configuration;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/10/23
+ * @since 1.6.0
+ */</span>
+@Configuration(<span class = "literal">"customAuthenticationEventExecutionPlanConfiguration"</span>)
+@EnableConfigurationProperties(CasConfigurationProperties.<span class = "keyword">class</span>)
+<span class = "keyword">public</span> <span class = "keyword">class</span> CustomAuthenticationEventExecutionPlanConfiguration <span class = "keyword">implements</span> AuthenticationEventExecutionPlanConfigurer {
+    @Autowired
+    @Qualifier(<span class = "literal">"servicesManager"</span>)
+    <span class = "keyword">private</span> ServicesManager servicesManager;
+    @Autowired
+    @Qualifier(<span class = "literal">"jdbcPrincipalFactory"</span>)
+    <span class = "keyword">public</span> PrincipalFactory jdbcPrincipalFactory;
+    <span class = "comment">/**
+     * 注册验证器
+     *
+     * @return
+     */</span>
+    @Bean
+    <span class = "keyword">public</span> AuthenticationHandler customAuthenticationHandler() {
+        //优先验证
+        <span class = "keyword">return</span> <span class = "keyword">new</span> UsernamePasswordSystemAuthenticationHandler(<span class = "literal">"customAuthenticationHandler"</span>,
+                servicesManager, jdbcPrincipalFactory, <span class = "literal">1</span>);
+    }
+    //注册自定义认证器
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">void</span> configureAuthenticationExecutionPlan(<span class = "keyword">final</span> AuthenticationEventExecutionPlan plan) {
+        plan.registerAuthenticationHandler(customAuthenticationHandler());
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.auth;
+<span class = "keyword">import</span> org.apache.commons.lang3.builder.HashCodeBuilder;
+<span class = "keyword">import</span> org.apereo.cas.authentication.RememberMeUsernamePasswordCredential;
+<span class = "keyword">import</span> javax.validation.constraints.Size;
+<span class = "comment">/**
+ * 用户名，密码，系统
+ *
+ * @author Carl
+ * @date 2017/10/23
+ * @since
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> UsernamePasswordSysCredential <span class = "keyword">extends</span> RememberMeUsernamePasswordCredential {
+    @Size(min = <span class = "literal">2</span>, message = <span class = "literal">"require system"</span>)
+    <span class = "keyword">private</span> String system;
+    <span class = "keyword">public</span> String getSystem() {
+        <span class = "keyword">return</span> system;
+    }
+    <span class = "keyword">public</span> UsernamePasswordSysCredential setSystem(String system) {
+        <span class = "keyword">this</span>.system = system;
+        <span class = "keyword">return</span> <span class = "keyword">this</span>;
+    }
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">int</span> hashCode() {
+        <span class = "keyword">return</span> <span class = "keyword">new</span> HashCodeBuilder()
+                .appendSuper(<span class = "keyword">super</span>.hashCode())
+                .append(<span class = "keyword">this</span>.system)
+                .toHashCode();
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.auth;
+<span class = "keyword">import</span> org.apereo.cas.web.flow.AbstractCasWebflowConfigurer;
+<span class = "keyword">import</span> org.apereo.cas.web.flow.CasWebflowConstants;
+<span class = "keyword">import</span> org.springframework.webflow.definition.registry.FlowDefinitionRegistry;
+<span class = "keyword">import</span> org.springframework.webflow.engine.Flow;
+<span class = "keyword">import</span> org.springframework.webflow.engine.ViewState;
+<span class = "keyword">import</span> org.springframework.webflow.engine.builder.BinderConfiguration;
+<span class = "keyword">import</span> org.springframework.webflow.engine.builder.support.FlowBuilderServices;
+<span class = "comment">/**
+ * 重新定义默认的web流程
+ *
+ * @author Carl
+ * @date 2017/10/23
+ * @since 1.6.0
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> CustomWebflowConfigurer <span class = "keyword">extends</span> AbstractCasWebflowConfigurer {
+    <span class = "keyword">public</span> CustomWebflowConfigurer(FlowBuilderServices flowBuilderServices, FlowDefinitionRegistry flowDefinitionRegistry) {
+        <span class = "keyword">super</span>(flowBuilderServices, flowDefinitionRegistry);
+    }
+    @Override
+    <span class = "keyword">protected</span> <span class = "keyword">void</span> doInitialize() <span class = "keyword">throws</span> Exception {
+        <span class = "keyword">final</span> Flow flow = getLoginFlow();
+        bindCredential(flow);
+    }
+    <span class = "comment">/**
+     * 绑定输入信息
+     *
+     * @param flow
+     */</span>
+    <span class = "keyword">protected</span> <span class = "keyword">void</span> bindCredential(Flow flow) {
+        //重写绑定自定义credential
+        createFlowVariable(flow, CasWebflowConstants.VAR_ID_CREDENTIAL, UsernamePasswordSysCredential.<span class = "keyword">class</span>);
+        //登录页绑定新参数
+        <span class = "keyword">final</span> ViewState state = (ViewState) flow.getState(CasWebflowConstants.STATE_ID_VIEW_LOGIN_FORM);
+        <span class = "keyword">final</span> BinderConfiguration cfg = getViewStateBinderConfiguration(state);
+        //由于用户名以及密码已经绑定，所以只需对新加系统参数绑定即可
+        cfg.addBinding(<span class = "keyword">new</span> BinderConfiguration.Binding(<span class = "literal">"system"</span>, <span class = "keyword">null</span>, <span class = "keyword">false</span>));
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/10/23
+ * @since 1.6.0
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.auth;
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate.imp.mail;
+<span class = "keyword">import</span> com.carl.sso.support.validate.ValidateCredential;
+<span class = "keyword">import</span> javax.validation.constraints.NotNull;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/11/2
+ * @since 2.3.8
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> MailValidateCredential <span class = "keyword">extends</span> MailCredential <span class = "keyword">implements</span> ValidateCredential {
+    //校验码
+    <span class = "keyword">private</span> String code;
+    <span class = "comment">/**
+     * @param sessionId
+     * @param mail
+     * @param busId     业务id，用于区分发送场景
+     */</span>
+    <span class = "keyword">public</span> MailValidateCredential(@NotNull String sessionId, @NotNull String mail, @NotNull String busId, @NotNull String code) {
+        <span class = "keyword">super</span>(sessionId, mail, busId);
+        <span class = "keyword">this</span>.code = code;
+    }
+    @Override
+    <span class = "keyword">public</span> Object data() {
+        <span class = "keyword">return</span> code;
+    }
+    @Override
+    <span class = "keyword">public</span> String id() {
+        <span class = "keyword">return</span> <span class = "keyword">super</span>.id();
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate.imp.mail;
+<span class = "keyword">import</span> com.carl.sso.support.validate.Credential;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/11/2
+ * @since 2.3.8
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> MailCredential <span class = "keyword">implements</span> Credential {
+    <span class = "keyword">private</span> String mail;
+    <span class = "keyword">private</span> String sessionId;
+    <span class = "keyword">private</span> String busId;
+    <span class = "comment">/**
+     * @param sessionId
+     * @param mail
+     * @param busId     业务id，用于区分发送场景
+     */</span>
+    <span class = "keyword">public</span> MailCredential(String sessionId, String mail, String busId) {
+        <span class = "keyword">this</span>.mail = mail;
+        <span class = "keyword">this</span>.sessionId = sessionId;
+        <span class = "keyword">this</span>.busId = busId;
+    }
+    <span class = "keyword">public</span> String getMail() {
+        <span class = "keyword">return</span> mail;
+    }
+    <span class = "keyword">public</span> <span class = "keyword">void</span> setMail(String mail) {
+        <span class = "keyword">this</span>.mail = mail;
+    }
+    @Override
+    <span class = "keyword">public</span> String id() {
+        <span class = "keyword">return</span> String.format(<span class = "literal">"%s-%s-%s"</span>, sessionId, mail, busId);
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate.imp.mail;
+<span class = "keyword">import</span> com.carl.sso.support.validate.ISender;
+<span class = "keyword">import</span> com.carl.sso.support.validate.exception.ValidateSenderException;
+<span class = "keyword">import</span> org.springframework.mail.SimpleMailMessage;
+<span class = "keyword">import</span> org.springframework.mail.javamail.JavaMailSender;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/11/2
+ * @since
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> MailSender <span class = "keyword">implements</span> ISender<MailInformative> {
+    <span class = "keyword">private</span> JavaMailSender mailSender;
+    <span class = "keyword">public</span> MailSender(JavaMailSender mailSender) {
+        <span class = "keyword">this</span>.mailSender = mailSender;
+    }
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">void</span> send(MailInformative informative) <span class = "keyword">throws</span> ValidateSenderException {
+        SimpleMailMessage message = <span class = "keyword">new</span> SimpleMailMessage();
+        message.setFrom(informative.getFromMail());//发送者.
+        message.setTo(informative.getToMail());//接收者.
+        message.setSubject(informative.getSubject());//邮件主题.
+        message.setText(informative.getContent());//邮件内容.
+        mailSender.send(message);//发送邮件
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate.imp.mail;
+<span class = "keyword">import</span> com.carl.sso.support.validate.Informative;
+<span class = "keyword">import</span> java.util.Date;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/11/2
+ * @since
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> MailInformative <span class = "keyword">implements</span> Informative {
+    //发送邮件的from
+    <span class = "keyword">private</span> String fromMail;
+    //目标邮箱
+    <span class = "keyword">private</span> String toMail;
+    //邮件标题
+    <span class = "keyword">private</span> String subject;
+    //邮件内容
+    <span class = "keyword">private</span> String content;
+    //邮件编码
+    <span class = "keyword">private</span> String code;
+    //有效时长，秒
+    <span class = "keyword">private</span> <span class = "keyword">long</span> effective;
+    //信息唯一标志
+    <span class = "keyword">private</span> String id;
+    <span class = "keyword">public</span> String getFromMail() {
+        <span class = "keyword">return</span> fromMail;
+    }
+    <span class = "keyword">public</span> MailInformative setFromMail(String fromMail) {
+        <span class = "keyword">this</span>.fromMail = fromMail;
+        <span class = "keyword">return</span> <span class = "keyword">this</span>;
+    }
+    <span class = "keyword">public</span> String getToMail() {
+        <span class = "keyword">return</span> toMail;
+    }
+    <span class = "keyword">public</span> MailInformative setToMail(String toMail) {
+        <span class = "keyword">this</span>.toMail = toMail;
+        <span class = "keyword">return</span> <span class = "keyword">this</span>;
+    }
+    <span class = "keyword">public</span> String getSubject() {
+        <span class = "keyword">return</span> subject;
+    }
+    <span class = "keyword">public</span> MailInformative setSubject(String subject) {
+        <span class = "keyword">this</span>.subject = subject;
+        <span class = "keyword">return</span> <span class = "keyword">this</span>;
+    }
+    <span class = "keyword">public</span> String getContent() {
+        <span class = "keyword">return</span> content;
+    }
+    <span class = "keyword">public</span> MailInformative setContent(String content) {
+        <span class = "keyword">this</span>.content = content;
+        <span class = "keyword">return</span> <span class = "keyword">this</span>;
+    }
+    <span class = "keyword">public</span> String getCode() {
+        <span class = "keyword">return</span> code;
+    }
+    <span class = "keyword">public</span> MailInformative setCode(String code) {
+        <span class = "keyword">this</span>.code = code;
+        <span class = "keyword">return</span> <span class = "keyword">this</span>;
+    }
+    <span class = "keyword">public</span> <span class = "keyword">long</span> getEffective() {
+        <span class = "keyword">return</span> effective;
+    }
+    <span class = "keyword">public</span> MailInformative setEffective(<span class = "keyword">long</span> effective) {
+        <span class = "keyword">this</span>.effective = effective;
+        <span class = "keyword">return</span> <span class = "keyword">this</span>;
+    }
+    <span class = "keyword">public</span> String getId() {
+        <span class = "keyword">return</span> id;
+    }
+    <span class = "keyword">public</span> MailInformative setId(String id) {
+        <span class = "keyword">this</span>.id = id;
+        <span class = "keyword">return</span> <span class = "keyword">this</span>;
+    }
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">long</span> effective() {
+        <span class = "keyword">return</span> getEffective();
+    }
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">long</span> time() {
+        <span class = "keyword">return</span> <span class = "keyword">new</span> Date().getTime();
+    }
+    @Override
+    <span class = "keyword">public</span> String id() {
+        <span class = "keyword">return</span> getId();
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate.imp.mail;
+<span class = "keyword">import</span> com.carl.sso.support.validate.IStore;
+<span class = "keyword">import</span> com.carl.sso.support.validate.IValidator;
+<span class = "keyword">import</span> com.carl.sso.support.validate.ValidateResult;
+<span class = "keyword">import</span> java.util.Date;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/11/2
+ * @since
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> MailValidator <span class = "keyword">implements</span> IValidator<MailValidateCredential> {
+    <span class = "keyword">private</span> IStore<MailInformative, MailCredential> store;
+    <span class = "keyword">public</span> MailValidator(IStore<MailInformative, MailCredential> store) {
+        <span class = "keyword">this</span>.store = store;
+    }
+    @Override
+    <span class = "keyword">public</span> String name() {
+        <span class = "keyword">return</span> <span class = "literal">"mail"</span>;
+    }
+    @Override
+    <span class = "keyword">public</span> ValidateResult identify(MailValidateCredential mailValidateCredential) {
+        MailInformative informative = store.get(mailValidateCredential);
+        <span class = "keyword">if</span> (informative == <span class = "keyword">null</span>) {
+            <span class = "keyword">return</span> ValidateResult.FAIL;
+        }
+        ValidateResult res;
+        //未来时间减创建时间大于失效时间
+        <span class = "keyword">if</span> ((<span class = "keyword">new</span> Date().getTime() - informative.time()) > informative.effective()) {
+            res = ValidateResult.EXPIRED;
+            <span class = "keyword">this</span>.store.remove(mailValidateCredential);
+        } <span class = "keyword">else</span> <span class = "keyword">if</span> (informative.getCode().equals(mailValidateCredential.data())) {
+            res = ValidateResult.SUCCESS;
+<span class = "comment">//            this.store.remove(mailValidateCredential);</span>
+        } <span class = "keyword">else</span> {
+            res = ValidateResult.FAIL;
+        }
+        <span class = "keyword">return</span> res;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate.imp.mail;
+<span class = "keyword">import</span> com.carl.sso.support.validate.InformativeGenerator;
+<span class = "keyword">import</span> com.carl.sso.support.validate.configuration.MailProperties;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/11/2
+ * @since
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> MailInformativeGenerator <span class = "keyword">implements</span> InformativeGenerator<MailInformative, MailCredential> {
+    <span class = "keyword">private</span> MailProperties properties;
+    <span class = "keyword">public</span> MailInformativeGenerator(MailProperties properties) {
+        <span class = "keyword">this</span>.properties = properties;
+    }
+    @Override
+    <span class = "keyword">public</span> MailInformative generate(MailCredential mailCredential) {
+        //生成随机码
+        <span class = "keyword">int</span> code = (<span class = "keyword">int</span>) ((Math.random() * <span class = "literal">9</span> + <span class = "literal">1</span>) * Math.pow(<span class = "literal">10</span>, properties.getCodeLen()));
+        String strCode = String.valueOf(code);
+        MailInformative informative = <span class = "keyword">new</span> MailInformative()
+                .setCode(strCode)
+                .setEffective(properties.getEffective())
+                .setContent(String.format(properties.getContent(), strCode))
+                .setFromMail(properties.getFrom())
+                .setToMail(mailCredential.getMail())
+                .setId(mailCredential.id())
+                .setSubject(properties.getSubject());
+        <span class = "keyword">return</span> informative;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate.imp.mail;
+<span class = "keyword">import</span> com.carl.sso.support.validate.IStore;
+<span class = "keyword">import</span> java.util.HashMap;
+<span class = "keyword">import</span> java.util.Map;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/11/2
+ * @since 2.3.8
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> MailMemoryStore <span class = "keyword">implements</span> IStore<MailInformative, MailCredential> {
+    <span class = "keyword">private</span> Map<String, MailInformative> store = <span class = "keyword">new</span> HashMap<>();
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">void</span> save(MailInformative mailInformative) {
+        store.put(mailInformative.id(), mailInformative);
+    }
+    @Override
+    <span class = "keyword">public</span> MailInformative get(MailCredential mailCredential) {
+        <span class = "keyword">return</span> store.get(mailCredential.id());
+    }
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">void</span> remove(MailCredential mailCredential) {
+        store.remove(mailCredential.id());
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "comment">/**
+ * 邮箱校验方式
+ *
+ * @author Carl
+ * @date 2017/11/2
+ * @since
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate.imp.mail;
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate.configuration;
+<span class = "keyword">import</span> java.io.Serializable;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/11/2
+ * @since
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> MailProperties <span class = "keyword">implements</span> Serializable {
+    <span class = "keyword">private</span> <span class = "keyword">boolean</span> enable = <span class = "keyword">true</span>;
+    //有效期，十分钟有效
+    <span class = "keyword">private</span> <span class = "keyword">long</span> effective = <span class = "literal">60</span> * <span class = "literal">10</span>;
+    //邮件内容，例如：你的验证码为%s
+    <span class = "keyword">private</span> String content = <span class = "literal">"欢迎注册，你的验证码为：%s（统一登录门户）"</span>;
+    <span class = "keyword">private</span> String subject = <span class = "literal">"统一门户注册验证码"</span>;
+    //来自哪个用户发送
+    <span class = "keyword">private</span> String from;
+    //验证码长度
+    <span class = "keyword">private</span> <span class = "keyword">int</span> codeLen = <span class = "literal">6</span>;
+    <span class = "keyword">public</span> <span class = "keyword">long</span> getEffective() {
+        <span class = "keyword">return</span> effective;
+    }
+    <span class = "keyword">public</span> <span class = "keyword">void</span> setEffective(<span class = "keyword">long</span> effective) {
+        <span class = "keyword">this</span>.effective = effective;
+    }
+    <span class = "keyword">public</span> String getContent() {
+        <span class = "keyword">return</span> content;
+    }
+    <span class = "keyword">public</span> <span class = "keyword">void</span> setContent(String content) {
+        <span class = "keyword">this</span>.content = content;
+    }
+    <span class = "keyword">public</span> <span class = "keyword">boolean</span> isEnable() {
+        <span class = "keyword">return</span> enable;
+    }
+    <span class = "keyword">public</span> <span class = "keyword">void</span> setEnable(<span class = "keyword">boolean</span> enable) {
+        <span class = "keyword">this</span>.enable = enable;
+    }
+    <span class = "keyword">public</span> String getSubject() {
+        <span class = "keyword">return</span> subject;
+    }
+    <span class = "keyword">public</span> <span class = "keyword">void</span> setSubject(String subject) {
+        <span class = "keyword">this</span>.subject = subject;
+    }
+    <span class = "keyword">public</span> String getFrom() {
+        <span class = "keyword">return</span> from;
+    }
+    <span class = "keyword">public</span> <span class = "keyword">void</span> setFrom(String from) {
+        <span class = "keyword">this</span>.from = from;
+    }
+    <span class = "keyword">public</span> <span class = "keyword">int</span> getCodeLen() {
+        <span class = "keyword">return</span> codeLen;
+    }
+    <span class = "keyword">public</span> <span class = "keyword">void</span> setCodeLen(<span class = "keyword">int</span> codeLen) {
+        <span class = "keyword">this</span>.codeLen = codeLen;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate.configuration;
+<span class = "keyword">import</span> org.springframework.boot.context.properties.ConfigurationProperties;
+<span class = "keyword">import</span> org.springframework.boot.context.properties.NestedConfigurationProperty;
+<span class = "keyword">import</span> java.io.Serializable;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/11/2
+ * @since
+ */</span>
+@ConfigurationProperties(value = <span class = "literal">"sso.validate"</span>)
+<span class = "keyword">public</span> <span class = "keyword">class</span> SSOValidateConfigurationProperties <span class = "keyword">implements</span> Serializable {
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">final</span> String PREFIX = <span class = "literal">"sso.validate"</span>;
+    @NestedConfigurationProperty
+    <span class = "keyword">private</span> MailProperties mail = <span class = "keyword">new</span> MailProperties();
+    <span class = "keyword">public</span> MailProperties getMail() {
+        <span class = "keyword">return</span> mail;
+    }
+    <span class = "keyword">public</span> <span class = "keyword">void</span> setMail(MailProperties mail) {
+        <span class = "keyword">this</span>.mail = mail;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate.core;
+<span class = "keyword">import</span> com.carl.sso.support.validate.*;
+<span class = "keyword">import</span> com.carl.sso.support.validate.exception.ValidateSenderException;
+<span class = "comment">/**
+ * 默认的校验服务
+ *
+ * @author Carl
+ * @date 2017/11/2
+ * @since 2.3.8
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> DefaultValidateService<K <span class = "keyword">extends</span> Informative, T <span class = "keyword">extends</span> Credential, O <span class = "keyword">extends</span> ValidateCredential> <span class = "keyword">implements</span> IValidateService<T, O> {
+    <span class = "keyword">private</span> InformativeGenerator<K, T> generator;
+    <span class = "keyword">private</span> IStore<K, T> store;
+    <span class = "keyword">private</span> ISender<K> sender;
+    <span class = "keyword">private</span> IValidator<O> validator;
+    <span class = "keyword">public</span> DefaultValidateService(InformativeGenerator<K, T> generator, IStore<K, T> store, ISender<K> sender, IValidator<O> validator) {
+        <span class = "keyword">this</span>.generator = generator;
+        <span class = "keyword">this</span>.store = store;
+        <span class = "keyword">this</span>.sender = sender;
+        <span class = "keyword">this</span>.validator = validator;
+    }
+    <span class = "keyword">public</span> InformativeGenerator<K, T> getGenerator() {
+        <span class = "keyword">return</span> generator;
+    }
+    <span class = "keyword">public</span> IStore<K, T> getStore() {
+        <span class = "keyword">return</span> store;
+    }
+    <span class = "keyword">public</span> ISender<K> getSender() {
+        <span class = "keyword">return</span> sender;
+    }
+    <span class = "keyword">public</span> IValidator<O> getValidator() {
+        <span class = "keyword">return</span> validator;
+    }
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">void</span> send(T t) <span class = "keyword">throws</span> ValidateSenderException {
+        K informative = getGenerator().generate(t);
+        getSender().send(informative);
+        getStore().save(informative);
+    }
+    @Override
+    <span class = "keyword">public</span> ValidateResult validate(O o) {
+        <span class = "keyword">return</span> getValidator().identify(o);
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate.config;
+<span class = "keyword">import</span> com.carl.sso.support.validate.configuration.SSOValidateConfigurationProperties;
+<span class = "keyword">import</span> com.carl.sso.support.validate.core.DefaultValidateService;
+<span class = "keyword">import</span> com.carl.sso.support.validate.imp.mail.MailInformativeGenerator;
+<span class = "keyword">import</span> com.carl.sso.support.validate.imp.mail.MailMemoryStore;
+<span class = "keyword">import</span> com.carl.sso.support.validate.imp.mail.MailSender;
+<span class = "keyword">import</span> com.carl.sso.support.validate.imp.mail.MailValidator;
+<span class = "keyword">import</span> org.slf4j.Logger;
+<span class = "keyword">import</span> org.slf4j.LoggerFactory;
+<span class = "keyword">import</span> org.springframework.beans.factory.annotation.Autowired;
+<span class = "keyword">import</span> org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+<span class = "keyword">import</span> org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+<span class = "keyword">import</span> org.springframework.boot.context.properties.EnableConfigurationProperties;
+<span class = "keyword">import</span> org.springframework.cloud.context.config.annotation.RefreshScope;
+<span class = "keyword">import</span> org.springframework.context.annotation.Bean;
+<span class = "keyword">import</span> org.springframework.context.annotation.Configuration;
+<span class = "keyword">import</span> org.springframework.mail.javamail.JavaMailSender;
+<span class = "comment">/**
+ * 邮箱校验服务，当配置<code>sso.validate.mail.enable=true</code>
+ * 生效
+ *
+ * @author Carl
+ * @date 2017/11/2
+ * @since
+ */</span>
+@Configuration(<span class = "literal">"ssoMailValidateConfiguration"</span>)
+@EnableConfigurationProperties(SSOValidateConfigurationProperties.<span class = "keyword">class</span>)
+@ConditionalOnProperty(name = <span class = "literal">"sso.validate.mail.enable"</span>, havingValue = <span class = "literal">"true"</span>)
+<span class = "keyword">public</span> <span class = "keyword">class</span> SSOMailValidateConfiguration {
+    <span class = "keyword">private</span> <span class = "keyword">static</span> <span class = "keyword">final</span> Logger LOGGER = LoggerFactory.getLogger(SSOMailValidateConfiguration.<span class = "keyword">class</span>);
+    @Autowired
+    <span class = "keyword">private</span> SSOValidateConfigurationProperties properties;
+    @Autowired
+    <span class = "keyword">private</span> JavaMailSender mailSender;
+    @Bean
+    @ConditionalOnMissingBean(name = <span class = "literal">"mailInformativeGenerator"</span>)
+    @RefreshScope
+    <span class = "keyword">public</span> MailInformativeGenerator mailInformativeGenerator() {
+        <span class = "keyword">return</span> <span class = "keyword">new</span> MailInformativeGenerator(properties.getMail());
+    }
+    @Bean
+    @ConditionalOnMissingBean(name = <span class = "literal">"mailStore"</span>)
+    @RefreshScope
+    <span class = "keyword">public</span> MailMemoryStore mailStore() {
+        LOGGER.warn(<span class = "literal">"验证码内存存储，应考虑放于数据库或缓存设备"</span>);
+        <span class = "keyword">return</span> <span class = "keyword">new</span> MailMemoryStore();
+    }
+    @Bean
+    @RefreshScope
+    @ConditionalOnMissingBean(name = <span class = "literal">"validateMailSender"</span>)
+    <span class = "keyword">public</span> MailSender validateMailSender() {
+        LOGGER.info(<span class = "literal">"邮件发送验证码"</span>);
+        <span class = "keyword">return</span> <span class = "keyword">new</span> MailSender(mailSender);
+    }
+    @Bean
+    @ConditionalOnMissingBean(name = <span class = "literal">"mailValidator"</span>)
+    <span class = "keyword">public</span> MailValidator mailValidator() {
+        <span class = "keyword">return</span> <span class = "keyword">new</span> MailValidator(mailStore());
+    }
+    @Bean
+    @ConditionalOnMissingBean(name = <span class = "literal">"defaultValidateService"</span>)
+    @RefreshScope
+    <span class = "keyword">public</span> DefaultValidateService defaultValidateService() {
+        //默认的邮箱校验服务
+        DefaultValidateService service = <span class = "keyword">new</span> DefaultValidateService(
+                mailInformativeGenerator(),
+                mailStore(),
+                validateMailSender(),
+                mailValidator());
+        <span class = "keyword">return</span> service;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate.config;
+<span class = "keyword">import</span> com.carl.sso.support.validate.configuration.SSOValidateConfigurationProperties;
+<span class = "keyword">import</span> org.springframework.beans.factory.annotation.Autowired;
+<span class = "keyword">import</span> org.springframework.boot.context.properties.EnableConfigurationProperties;
+<span class = "keyword">import</span> org.springframework.context.annotation.Configuration;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/11/2
+ * @since
+ */</span>
+@Configuration(<span class = "literal">"ssoValidateConfiguration"</span>)
+@EnableConfigurationProperties(SSOValidateConfigurationProperties.<span class = "keyword">class</span>)
+<span class = "keyword">public</span> <span class = "keyword">class</span> SSOValidateConfiguration {
+    @Autowired
+    <span class = "keyword">private</span> SSOValidateConfigurationProperties properties;
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate;
+<span class = "comment">/**
+ * 验证结果
+ *
+ * @author Carl
+ * @date 2017/11/2
+ * @since
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">enum</span> ValidateResult {
+    <span class = "comment">/**
+     * 验证成功
+     */</span>
+    SUCCESS,
+    <span class = "comment">/**
+     * 验证失败
+     */</span>
+    FAIL,
+    <span class = "comment">/**
+     * 过期
+     */</span>
+    EXPIRED
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate;
+<span class = "keyword">import</span> com.carl.sso.support.validate.exception.ValidateSenderException;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/11/2
+ * @since 2.3.8
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">interface</span> IValidateService<T <span class = "keyword">extends</span> Credential, O <span class = "keyword">extends</span> ValidateCredential> {
+    <span class = "comment">/**
+     * 发送数据
+     *
+     * @param t
+     */</span>
+    <span class = "keyword">void</span> send(T t) <span class = "keyword">throws</span> ValidateSenderException;
+    <span class = "comment">/**
+     * 校验
+     *
+     * @param o
+     * @return
+     */</span>
+    ValidateResult validate(O o);
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate;
+<span class = "comment">/**
+ * 验证数据
+ *
+ * @author Carl
+ * @date 2017/11/2
+ * @since
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">interface</span> IValidator<T <span class = "keyword">extends</span> ValidateCredential> {
+    <span class = "comment">/**
+     * 验证器名称
+     *
+     * @return
+     */</span>
+    String name();
+    <span class = "comment">/**
+     * 鉴定验证码
+     *
+     * @param t
+     * @return
+     */</span>
+    ValidateResult identify(T t);
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate;
+<span class = "keyword">import</span> java.io.Serializable;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/11/2
+ * @since 2.3.8
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">interface</span> Credential <span class = "keyword">extends</span> Serializable {
+    <span class = "comment">/**
+     * 唯一标志
+     *
+     * @return
+     */</span>
+    String id();
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate;
+<span class = "comment">/**
+ * 验证存储器
+ *
+ * @author Carl
+ * @date 2017/11/2
+ * @since 2.3.8
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">interface</span> IStore<T <span class = "keyword">extends</span> Informative, I <span class = "keyword">extends</span> Credential> {
+    <span class = "comment">/**
+     * 保存验证数据
+     */</span>
+    <span class = "keyword">void</span> save(T t);
+    <span class = "comment">/**
+     * 获取验证数据
+     *
+     * @param i
+     * @return
+     */</span>
+    T get(I i);
+    <span class = "comment">/**
+     *
+     * 移除
+     */</span>
+    <span class = "keyword">void</span> remove(I i);
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate;
+<span class = "keyword">import</span> com.carl.sso.support.validate.exception.ValidateSenderException;
+<span class = "comment">/**
+ * 校验发送者，发送短信，邮件等
+ *
+ * @author Carl
+ * @date 2017/11/2
+ * @since 2.3.8
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">interface</span> ISender<T <span class = "keyword">extends</span> Informative> {
+    <span class = "comment">/**
+     * @param t
+     * @throws ValidateSenderException 发送失败时抛出异常
+     */</span>
+    <span class = "keyword">void</span> send(T t) <span class = "keyword">throws</span> ValidateSenderException;
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate;
+<span class = "comment">/**
+ * @param <T> 发送信息
+ * @param <I> 构建信息
+ * @author Carl
+ * @date 2017/11/2
+ * @since
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">interface</span> InformativeGenerator<T <span class = "keyword">extends</span> Informative, I <span class = "keyword">extends</span> Credential> {
+    <span class = "comment">/**
+     * 生成发送信息
+     * @param i
+     * @return
+     */</span>
+    T generate(I i);
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate.exception;
+<span class = "keyword">import</span> com.carl.sso.support.validate.ISender;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/11/2
+ * @since 2.3.8
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> ValidateSenderException <span class = "keyword">extends</span> Exception {
+    <span class = "keyword">private</span> Class<? <span class = "keyword">extends</span> ISender> clz;
+    <span class = "keyword">public</span> ValidateSenderException(Class<? <span class = "keyword">extends</span> ISender> clz) {
+        <span class = "keyword">this</span>.clz = clz;
+    }
+    <span class = "keyword">public</span> ValidateSenderException(String message, Class<? <span class = "keyword">extends</span> ISender> clz) {
+        <span class = "keyword">super</span>(message);
+        <span class = "keyword">this</span>.clz = clz;
+    }
+    <span class = "keyword">public</span> ValidateSenderException(String message, Throwable cause, Class<? <span class = "keyword">extends</span> ISender> clz) {
+        <span class = "keyword">super</span>(message, cause);
+        <span class = "keyword">this</span>.clz = clz;
+    }
+    <span class = "keyword">public</span> ValidateSenderException(Throwable cause, Class<? <span class = "keyword">extends</span> ISender> clz) {
+        <span class = "keyword">super</span>(cause);
+        <span class = "keyword">this</span>.clz = clz;
+    }
+    <span class = "keyword">public</span> ValidateSenderException(String message, Throwable cause, <span class = "keyword">boolean</span> enableSuppression, <span class = "keyword">boolean</span> writableStackTrace, Class<? <span class = "keyword">extends</span> ISender> clz) {
+        <span class = "keyword">super</span>(message, cause, enableSuppression, writableStackTrace);
+        <span class = "keyword">this</span>.clz = clz;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/11/2
+ * @since 2.3.8
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">interface</span> ValidateCredential <span class = "keyword">extends</span> Credential {
+    <span class = "comment">/**
+     * 传入数据
+     * @return
+     */</span>
+    Object data();
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate;
+<span class = "keyword">import</span> java.io.Serializable;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/11/2
+ * @since 2.3.8
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">interface</span> Informative <span class = "keyword">extends</span> Credential, Serializable {
+    <span class = "comment">/**
+     * 有效时间秒, -1 无限制
+     *
+     * @return
+     */</span>
+    <span class = "keyword">long</span> effective();
+    <span class = "comment">/**
+     * 创建时间
+     *
+     * @return
+     */</span>
+    <span class = "keyword">long</span> time();
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "comment">/**
+ * 验证模块，用于发送验证码等等
+ *
+ * @author Carl
+ * @date 2017/11/2
+ * @since
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.validate;
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha;
+<span class = "comment">/**
+ * 验证码常亮
+ *
+ * @author Carl
+ * @date 2017/10/27
+ * @since
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">interface</span> CaptchaConstants {
+    <span class = "comment">/**
+     * 验证码存储常量，可以存储session等等
+     */</span>
+    String STORE_CODE = <span class = "literal">"captcha_code"</span>;
+    <span class = "comment">/**
+     * 请求路径
+     */</span>
+    String REQUEST_MAPPING = <span class = "literal">"/captcha"</span>;
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha.imp.cage;
+<span class = "keyword">import</span> com.github.cage.Cage;
+<span class = "keyword">import</span> com.github.cage.GCage;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.string.StringCaptchaWriter;
+<span class = "keyword">import</span> javax.imageio.ImageIO;
+<span class = "keyword">import</span> java.io.IOException;
+<span class = "keyword">import</span> java.io.OutputStream;
+<span class = "comment">/**
+ * http://akiraly.github.io/cage/quickstart.html 验证码库
+ *
+ * @author Carl
+ * @date 2017/10/27
+ * @since 2.3.8
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> CageStringCaptchaWriter <span class = "keyword">extends</span> StringCaptchaWriter {
+    <span class = "keyword">private</span> Cage cage = <span class = "keyword">new</span> GCage();
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">void</span> write(String text, OutputStream outputStream) <span class = "keyword">throws</span> IOException {
+        ImageIO.write(cage.drawImage(text),<span class = "literal">"png"</span>, outputStream);
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha.imp.cage;
+<span class = "keyword">import</span> com.github.cage.token.RandomTokenGenerator;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.string.StringTokenGenerator;
+<span class = "comment">/**
+ * cage字符串生成器
+ *
+ * @author Carl
+ * @date 2017/10/27
+ * @since 2.3.8
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> CageStringTokenGenerator <span class = "keyword">extends</span> StringTokenGenerator {
+    <span class = "keyword">private</span> RandomTokenGenerator generator = <span class = "keyword">new</span> RandomTokenGenerator(<span class = "keyword">null</span>, <span class = "literal">4</span>, <span class = "literal">0</span>);
+    @Override
+    <span class = "keyword">public</span> String generator() {
+        <span class = "keyword">return</span> generator.next();
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha.imp.cage;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.CaptchaController;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.ICaptchaWriter;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.SessionCaptchaResultAware;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.SessionCaptchaResultProvider;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.string.StringCaptchaResultAware;
+<span class = "comment">/**
+ * Cage验证码控制器
+ *
+ * @author Carl
+ * @date 2017/10/27
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> CageCaptchaController <span class = "keyword">extends</span> CaptchaController {
+    <span class = "keyword">public</span> CageCaptchaController(ICaptchaWriter<String> captchaWriter, SessionCaptchaResultAware<String> aware) {
+        <span class = "keyword">super</span>(captchaWriter, aware);
+    }
+    <span class = "keyword">public</span> CageCaptchaController() {
+        <span class = "keyword">super</span>(<span class = "keyword">new</span> CageStringCaptchaWriter(), <span class = "keyword">new</span> StringCaptchaResultAware(<span class = "keyword">new</span> SessionCaptchaResultProvider(), <span class = "keyword">new</span> CageStringTokenGenerator()));
+    }
+    <span class = "keyword">public</span> CageCaptchaController(SessionCaptchaResultProvider provider) {
+        <span class = "keyword">super</span>(<span class = "keyword">new</span> CageStringCaptchaWriter(), <span class = "keyword">new</span> StringCaptchaResultAware(provider, <span class = "keyword">new</span> CageStringTokenGenerator()));
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha;
+<span class = "comment">/**
+ * 验证码输出结果对象
+ *
+ * @author Carl
+ * @date 2017/10/27
+ * @since
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">interface</span> ICaptchaResultAware<S, T> {
+    <span class = "comment">/**
+     * 获取数据结果
+     *
+     * @param s 存储器
+     * @return
+     */</span>
+    T getAndStore(S s);
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha.config;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.SessionCaptchaResultProvider;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.imp.cage.CageCaptchaController;
+<span class = "keyword">import</span> org.apereo.cas.configuration.CasConfigurationProperties;
+<span class = "keyword">import</span> org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+<span class = "keyword">import</span> org.springframework.boot.context.properties.EnableConfigurationProperties;
+<span class = "keyword">import</span> org.springframework.context.annotation.Bean;
+<span class = "keyword">import</span> org.springframework.context.annotation.Configuration;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/10/28
+ * @since 1.5.0
+ */</span>
+@Configuration(<span class = "literal">"captchaConfiguration"</span>)
+@EnableConfigurationProperties(CasConfigurationProperties.<span class = "keyword">class</span>)
+<span class = "keyword">public</span> <span class = "keyword">class</span> CaptchaConfiguration {
+    //注册bean到spring容器
+    @Bean
+    @ConditionalOnMissingBean(name = <span class = "literal">"captchaController"</span>)
+    <span class = "keyword">public</span> CageCaptchaController captchaController() {
+        <span class = "keyword">return</span> <span class = "keyword">new</span> CageCaptchaController(captchaResultProvider());
+    }
+    @Bean
+    <span class = "keyword">public</span> SessionCaptchaResultProvider captchaResultProvider() {
+        <span class = "keyword">return</span> <span class = "keyword">new</span> SessionCaptchaResultProvider();
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha.config;
+<span class = "keyword">import</span> org.apereo.cas.configuration.CasConfigurationProperties;
+<span class = "keyword">import</span> org.apereo.cas.web.flow.AbstractCasWebflowConfigurer;
+<span class = "keyword">import</span> org.apereo.cas.web.flow.CasWebflowConstants;
+<span class = "keyword">import</span> org.springframework.context.ApplicationContext;
+<span class = "keyword">import</span> org.springframework.webflow.definition.registry.FlowDefinitionRegistry;
+<span class = "keyword">import</span> org.springframework.webflow.engine.ActionState;
+<span class = "keyword">import</span> org.springframework.webflow.engine.Flow;
+<span class = "keyword">import</span> org.springframework.webflow.engine.ViewState;
+<span class = "keyword">import</span> org.springframework.webflow.execution.Action;
+<span class = "keyword">import</span> org.springframework.webflow.engine.builder.support.FlowBuilderServices;
+<span class = "keyword">import</span> java.util.ArrayList;
+<span class = "keyword">import</span> java.util.List;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/10/30
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> ValidateWebflowConfigurer <span class = "keyword">extends</span> AbstractCasWebflowConfigurer {
+    <span class = "comment">/**
+     * 校验码动作
+     */</span>
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">final</span> String VALIDATE_CAPTCHA_ACTION = <span class = "literal">"validateCaptchaAction"</span>;
+    <span class = "keyword">public</span> ValidateWebflowConfigurer(FlowBuilderServices flowBuilderServices, FlowDefinitionRegistry loginFlowDefinitionRegistry, ApplicationContext applicationContext, CasConfigurationProperties casProperties) {
+        <span class = "keyword">super</span>(flowBuilderServices, loginFlowDefinitionRegistry);
+    }
+    @Override
+    <span class = "keyword">protected</span> <span class = "keyword">void</span> doInitialize() <span class = "keyword">throws</span> Exception {
+        //createPasswordResetValidateFlow();
+        createLoginValidateValidateFlow();
+    }
+    <span class = "comment">/**
+     * 登录校验流程
+     */</span>
+    <span class = "keyword">private</span> <span class = "keyword">void</span> createLoginValidateValidateFlow() {
+        <span class = "keyword">final</span> Flow flow = getLoginFlow();
+        <span class = "keyword">if</span> (flow != <span class = "keyword">null</span>) {
+            <span class = "keyword">final</span> ActionState state = (ActionState) flow.getState(CasWebflowConstants.TRANSITION_ID_REAL_SUBMIT);
+            <span class = "keyword">final</span> List<Action> currentActions = <span class = "keyword">new</span> ArrayList<>();
+            state.getActionList().forEach(currentActions::add);
+            currentActions.forEach(a -> state.getActionList().remove(a));
+            state.getActionList().add(createEvaluateAction(<span class = "literal">"validateLoginCaptchaAction"</span>));
+            currentActions.forEach(a -> state.getActionList().add(a));
+            state.getTransitionSet().add(createTransition(<span class = "literal">"captchaError"</span>, CasWebflowConstants.STATE_ID_INIT_LOGIN_FORM));
+        }
+    }
+    <span class = "comment">/**
+     * 发送邮箱前输入验证码流程
+     */</span>
+    <span class = "keyword">private</span> <span class = "keyword">void</span> createPasswordResetValidateFlow() {
+        <span class = "keyword">final</span> Flow flow = getLoginFlow();
+        <span class = "keyword">if</span> (flow != <span class = "keyword">null</span>) {
+            ViewState accountInfo = (ViewState) flow.getState(CasWebflowConstants.VIEW_ID_SEND_RESET_PASSWORD_ACCT_INFO);
+            //提交查找用户后，先校验验证码
+            createTransitionForState(accountInfo, <span class = "literal">"findAccount"</span>, VALIDATE_CAPTCHA_ACTION, <span class = "keyword">true</span>);
+            //校验图片动作
+            ActionState actionState = createActionState(flow, VALIDATE_CAPTCHA_ACTION, createEvaluateAction(VALIDATE_CAPTCHA_ACTION));
+            //失败重新是发送页
+            createTransitionForState(actionState, CasWebflowConstants.TRANSITION_ID_RESET_PASSWORD,
+                    CasWebflowConstants.VIEW_ID_SEND_RESET_PASSWORD_ACCT_INFO);
+            //发送邮件
+            createTransitionForState(actionState, <span class = "literal">"sendInstructions"</span>, <span class = "literal">"sendInstructions"</span>);
+        }
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha.config;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.SessionCaptchaResultProvider;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.action.CaptchaAwareFactory;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.action.ValidateCaptchaAction;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.action.ValidateLoginCaptchaAction;
+<span class = "keyword">import</span> org.apereo.cas.configuration.CasConfigurationProperties;
+<span class = "keyword">import</span> org.apereo.cas.pm.PasswordManagementService;
+<span class = "keyword">import</span> org.apereo.cas.pm.config.PasswordManagementConfiguration;
+<span class = "keyword">import</span> org.apereo.cas.web.flow.CasWebflowConfigurer;
+<span class = "keyword">import</span> org.springframework.beans.factory.annotation.Autowired;
+<span class = "keyword">import</span> org.springframework.beans.factory.annotation.Qualifier;
+<span class = "keyword">import</span> org.springframework.boot.autoconfigure.AutoConfigureAfter;
+<span class = "keyword">import</span> org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+<span class = "keyword">import</span> org.springframework.boot.context.properties.EnableConfigurationProperties;
+<span class = "keyword">import</span> org.springframework.cloud.context.config.annotation.RefreshScope;
+<span class = "keyword">import</span> org.springframework.context.ApplicationContext;
+<span class = "keyword">import</span> org.springframework.context.annotation.Bean;
+<span class = "keyword">import</span> org.springframework.context.annotation.Configuration;
+<span class = "keyword">import</span> org.springframework.webflow.definition.registry.FlowDefinitionRegistry;
+<span class = "keyword">import</span> org.springframework.webflow.engine.builder.support.FlowBuilderServices;
+<span class = "keyword">import</span> org.springframework.webflow.execution.Action;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/10/30
+ * @since
+ */</span>
+@Configuration(<span class = "literal">"validateWebflowConfiguation"</span>)
+@EnableConfigurationProperties(CasConfigurationProperties.<span class = "keyword">class</span>)
+@AutoConfigureAfter(PasswordManagementConfiguration.<span class = "keyword">class</span>)
+<span class = "keyword">public</span> <span class = "keyword">class</span> ValidateWebflowConfiguation {
+    @Autowired
+    <span class = "keyword">private</span> CasConfigurationProperties casProperties;
+    @Autowired
+    @Qualifier(<span class = "literal">"loginFlowRegistry"</span>)
+    <span class = "keyword">private</span> FlowDefinitionRegistry loginFlowDefinitionRegistry;
+    @Autowired
+    <span class = "keyword">private</span> ApplicationContext applicationContext;
+    @Autowired
+    <span class = "keyword">private</span> FlowBuilderServices flowBuilderServices;
+    @Autowired
+    <span class = "keyword">private</span> SessionCaptchaResultProvider captchaResultProvider;
+    @Autowired
+    <span class = "keyword">private</span> PasswordManagementService passwordManagementService;
+    @ConditionalOnMissingBean(name = <span class = "literal">"validateWebflowConfigurer"</span>)
+    @RefreshScope
+    @Bean
+    <span class = "keyword">public</span> CasWebflowConfigurer validateWebflowConfigurer() {
+        ValidateWebflowConfigurer validateWebflowConfigurer = <span class = "keyword">new</span> ValidateWebflowConfigurer(flowBuilderServices, loginFlowDefinitionRegistry, applicationContext, casProperties);
+        <span class = "keyword">return</span> validateWebflowConfigurer;
+    }
+    @ConditionalOnMissingBean(name = <span class = "literal">"validateCaptchaAction"</span>)
+    @Bean
+    @RefreshScope
+    <span class = "keyword">public</span> Action validateCaptchaAction() {
+        ValidateCaptchaAction validateCaptchaAction = <span class = "keyword">new</span> ValidateCaptchaAction(captchaResultProvider, captchaAwareFactory(), passwordManagementService);
+        <span class = "keyword">return</span> validateCaptchaAction;
+    }
+    @ConditionalOnMissingBean(name = <span class = "literal">"validateLoginCaptchaAction"</span>)
+    @Bean
+    @RefreshScope
+    <span class = "keyword">public</span> Action validateLoginCaptchaAction() {
+        ValidateLoginCaptchaAction validateCaptchaAction = <span class = "keyword">new</span> ValidateLoginCaptchaAction(captchaResultProvider);
+        <span class = "keyword">return</span> validateCaptchaAction;
+    }
+    @Bean
+    <span class = "keyword">public</span> CaptchaAwareFactory captchaAwareFactory() {
+        <span class = "keyword">return</span> <span class = "keyword">new</span> CaptchaAwareFactory();
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha;
+<span class = "comment">/**
+ * 验证码结果提供者
+ *
+ * @author Carl
+ * @date 2017/10/27
+ * @since
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">interface</span> ICaptchaResultProvider<T, S>{
+    <span class = "comment">/**
+     * 把S存储到T
+     *
+     * @param t
+     * @param s
+     */</span>
+    <span class = "keyword">void</span> store(T t, S s);
+    <span class = "comment">/**
+     * 在T中提供出s
+     * @param t
+     * @return
+     */</span>
+    S get(T t);
+    <span class = "comment">/**
+     * 校验
+     * @param store 持久化对象
+     * @param code 校验编码
+     * @return
+     */</span>
+    <span class = "keyword">boolean</span> validate(T store, S code);
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha;
+<span class = "keyword">import</span> javax.servlet.http.HttpSession;
+<span class = "comment">/**
+ * 会话意识器存储验证码
+ *
+ * @author Carl
+ * @date 2017/10/27
+ * @since 2.3.8
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">abstract</span> <span class = "keyword">class</span> SessionCaptchaResultAware<T> <span class = "keyword">implements</span> ICaptchaResultAware<HttpSession, T>{
+    <span class = "keyword">private</span> ICaptchaResultProvider<HttpSession, T> provider;
+    <span class = "keyword">private</span> ITokenGenerator<T> generator;
+    <span class = "keyword">public</span> SessionCaptchaResultAware(ICaptchaResultProvider<HttpSession, T> provider, ITokenGenerator<T> generator) {
+        <span class = "keyword">this</span>.provider = provider;
+        <span class = "keyword">this</span>.generator = generator;
+    }
+    <span class = "keyword">public</span> ITokenGenerator<T> getGenerator() {
+        <span class = "keyword">return</span> generator;
+    }
+    <span class = "keyword">public</span> ICaptchaResultProvider<HttpSession, T> getProvider() {
+        <span class = "keyword">return</span> provider;
+    }
+    @Override
+    <span class = "keyword">public</span> T getAndStore(HttpSession httpSession) {
+        T t = getGenerator().generator();
+        getProvider().store(httpSession, t);
+        <span class = "keyword">return</span> t;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha;
+<span class = "comment">/**
+ * 校验码生成器
+ *
+ * @author Carl
+ * @date 2017/10/27
+ * @since 2.3.8
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">interface</span> ITokenGenerator<T> {
+    <span class = "comment">/**
+     * 生成校验码
+     *
+     * @return
+     */</span>
+    T generator();
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha.action;
+        <span class = "keyword">import</span> javax.annotation.PostConstruct;
+        <span class = "keyword">import</span> java.util.HashMap;
+        <span class = "keyword">import</span> java.util.Map;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/10/30
+ * @since
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> CaptchaAwareFactory {
+    <span class = "keyword">private</span> Map<String, ICaptchaAware> awareRelation = <span class = "keyword">new</span> HashMap<>();
+    <span class = "keyword">public</span> <span class = "keyword">void</span> register(ICaptchaAware aware) {
+        awareRelation.put(aware.id(), aware);
+    }
+    <span class = "keyword">public</span> ICaptchaAware get(String id) {
+        <span class = "keyword">return</span> awareRelation.get(id);
+    }
+    @PostConstruct
+    <span class = "keyword">private</span> <span class = "keyword">void</span> afterInit() {
+        //注册当在充值密码发送邮件，当校验码成功，转发到sendInstructions，否则resetPassword findAccount
+        register(DefaultCaptchaAware.newInstance(<span class = "literal">"findAccount"</span>, <span class = "literal">"sendInstructions"</span>, <span class = "literal">"resetPassword"</span>));
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha.action;
+<span class = "keyword">import</span> com.carl.sso.support.auth.UsernamePasswordSysCredential;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.ICaptchaResultProvider;
+<span class = "keyword">import</span> org.apereo.cas.authentication.Credential;
+<span class = "keyword">import</span> org.apereo.cas.web.support.WebUtils;
+<span class = "keyword">import</span> org.slf4j.Logger;
+<span class = "keyword">import</span> org.slf4j.LoggerFactory;
+<span class = "keyword">import</span> org.springframework.binding.message.MessageBuilder;
+<span class = "keyword">import</span> org.springframework.binding.message.MessageContext;
+<span class = "keyword">import</span> org.springframework.webflow.action.AbstractAction;
+<span class = "keyword">import</span> org.springframework.webflow.execution.Event;
+<span class = "keyword">import</span> org.springframework.webflow.execution.RequestContext;
+<span class = "keyword">import</span> javax.servlet.http.HttpServletRequest;
+<span class = "keyword">import</span> javax.servlet.http.HttpSession;
+<span class = "comment">/**
+ * 登录校验码
+ *
+ * @author Carl
+ * @date 2017/11/18
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> ValidateLoginCaptchaAction <span class = "keyword">extends</span> AbstractAction {
+    <span class = "keyword">private</span> <span class = "keyword">static</span> <span class = "keyword">final</span> Logger LOGGER = LoggerFactory.getLogger(ValidateLoginCaptchaAction.<span class = "keyword">class</span>);
+    //验证码存储器
+    <span class = "keyword">private</span> ICaptchaResultProvider<HttpSession, String> captchaResultProvider;
+    <span class = "keyword">private</span> <span class = "keyword">static</span> <span class = "keyword">final</span> String CODE = <span class = "literal">"captchaError"</span>;
+    <span class = "keyword">public</span> ValidateLoginCaptchaAction(ICaptchaResultProvider<HttpSession, String> captchaResultProvider) {
+        <span class = "keyword">this</span>.captchaResultProvider = captchaResultProvider;
+    }
+    <span class = "comment">/**
+     * 前端验证码
+     */</span>
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">final</span> String CODE_PARAM = <span class = "literal">"validateCode"</span>;
+    @Override
+    <span class = "keyword">protected</span> Event doExecute(RequestContext context) <span class = "keyword">throws</span> Exception {
+        Credential credential = WebUtils.getCredential(context);
+        //系统信息不为空才检测校验码
+        <span class = "keyword">if</span>(credential <span class = "keyword">instanceof</span> UsernamePasswordSysCredential && ((UsernamePasswordSysCredential) credential).getSystem() != <span class = "keyword">null</span>) {
+            <span class = "keyword">if</span> (isEnable()) {
+                LOGGER.debug(<span class = "literal">"开始校验登录校验码"</span>);
+                HttpServletRequest request = WebUtils.getHttpServletRequest();
+                HttpSession httpSession = request.getSession();
+                //校验码
+                String inCode = request.getParameter(CODE_PARAM);
+                //校验码失败跳转到登录页
+                <span class = "keyword">if</span>(!this.captchaResultProvider.validate(httpSession, inCode)) {
+                    <span class = "keyword">return</span> getError(context);
+                }
+            }
+        }
+        <span class = "keyword">return</span> <span class = "keyword">null</span>;
+    }
+    <span class = "comment">/**
+     * 是否开启验证码
+     * @return
+     */</span>
+    <span class = "keyword">private</span> <span class = "keyword">boolean</span> isEnable() {
+        <span class = "keyword">return</span> <span class = "keyword">true</span>;
+    }
+    <span class = "comment">/**
+     * 跳转到错误页
+     * @param requestContext
+     * @return
+     */</span>
+    <span class = "keyword">private</span> Event getError(<span class = "keyword">final</span> RequestContext requestContext) {
+        <span class = "keyword">final</span> MessageContext messageContext = requestContext.getMessageContext();
+        messageContext.addMessage(<span class = "keyword">new</span> MessageBuilder().error().code(CODE).build());
+        <span class = "keyword">return</span> getEventFactorySupport().event(<span class = "keyword">this</span>, CODE);
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha.action;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/10/30
+ * @since
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">interface</span> ICaptchaAware {
+    <span class = "comment">/**
+     * 识别的id流转
+     * @return
+     */</span>
+    String id();
+    <span class = "comment">/**
+     * 成功流转
+     * @return
+     */</span>
+    String success();
+    <span class = "comment">/**
+     * 失败流转
+     * @return
+     */</span>
+    String fail();
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha.action;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.ICaptchaResultProvider;
+<span class = "keyword">import</span> org.apereo.cas.pm.PasswordManagementService;
+<span class = "keyword">import</span> org.apereo.cas.web.support.WebUtils;
+<span class = "keyword">import</span> org.springframework.webflow.action.AbstractAction;
+<span class = "keyword">import</span> org.springframework.webflow.execution.Event;
+<span class = "keyword">import</span> org.springframework.webflow.execution.RequestContext;
+<span class = "keyword">import</span> javax.servlet.http.HttpServletRequest;
+<span class = "keyword">import</span> javax.servlet.http.HttpSession;
+<span class = "comment">/**
+ * 校验动作
+ *
+ * @author Carl
+ * @date 2017/10/30
+ * @since
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> ValidateCaptchaAction <span class = "keyword">extends</span> AbstractAction {
+    //验证码存储器
+    <span class = "keyword">private</span> ICaptchaResultProvider<HttpSession, String> captchaResultProvider;
+    //流程工厂器
+    <span class = "keyword">private</span> CaptchaAwareFactory awareFactory;
+    <span class = "keyword">private</span> PasswordManagementService passwordManagementService;
+    <span class = "comment">/**
+     * 验证码结果
+     */</span>
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">final</span> String CAPTCHA_RESULT = <span class = "literal">"validateCaptchaResult"</span>;
+    <span class = "comment">/**
+     * 邮件校验
+     */</span>
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">final</span> String EMAIL_RESULT = <span class = "literal">"validateEmailResult"</span>;
+    <span class = "comment">/**
+     * 用户名参数
+     */</span>
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">final</span> String USERNAME_PARAM = <span class = "literal">"username"</span>;
+    <span class = "comment">/**
+     * 前端验证码
+     */</span>
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">final</span> String CODE_PARAM = <span class = "literal">"validateCode"</span>;
+    <span class = "keyword">public</span> ValidateCaptchaAction(ICaptchaResultProvider<HttpSession, String> captchaResultProvider, CaptchaAwareFactory awareFactory, PasswordManagementService passwordManagementService) {
+        <span class = "keyword">this</span>.captchaResultProvider = captchaResultProvider;
+        <span class = "keyword">this</span>.awareFactory = awareFactory;
+        <span class = "keyword">this</span>.passwordManagementService = passwordManagementService;
+    }
+    @Override
+    <span class = "keyword">protected</span> Event doExecute(RequestContext context) <span class = "keyword">throws</span> Exception {
+        String event = context.getCurrentTransition().getId();
+        ICaptchaAware aware = <span class = "keyword">this</span>.awareFactory.get(event);
+        HttpServletRequest request = WebUtils.getHttpServletRequest();
+        HttpSession httpSession = request.getSession();
+        //校验码
+        String inCode = request.getParameter(CODE_PARAM);
+        //邮箱
+        String username = request.getParameter(USERNAME_PARAM);
+        <span class = "keyword">if</span> (<span class = "keyword">this</span>.captchaResultProvider.validate(httpSession, inCode)) {
+            <span class = "keyword">try</span> {
+                passwordManagementService.findEmail(username);
+            } <span class = "keyword">catch</span> (Exception e) {
+                e.printStackTrace();
+                context.getFlowScope().put(EMAIL_RESULT, <span class = "literal">"邮箱错误"</span>);
+                context.getFlowScope().remove(CAPTCHA_RESULT);
+                <span class = "keyword">return</span> aware != <span class = "keyword">null</span> ? <span class = "keyword">new</span> Event(<span class = "keyword">this</span>, aware.fail()) : error();
+            }
+            //成功
+            <span class = "keyword">return</span> aware != <span class = "keyword">null</span> ? <span class = "keyword">new</span> Event(<span class = "keyword">this</span>, aware.success()) : success();
+        } <span class = "keyword">else</span> {
+            context.getFlowScope().put(CAPTCHA_RESULT, <span class = "literal">"验证码错误"</span>);
+            context.getFlowScope().put(USERNAME_PARAM, username);
+            <span class = "keyword">return</span> aware != <span class = "keyword">null</span> ? <span class = "keyword">new</span> Event(<span class = "keyword">this</span>, aware.fail()) : error();
+        }
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha.action;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/10/30
+ * @since 2.3.8
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> DefaultCaptchaAware <span class = "keyword">implements</span> ICaptchaAware {
+    <span class = "keyword">private</span> String id;
+    <span class = "keyword">private</span> String success;
+    <span class = "keyword">private</span> String fail;
+    <span class = "keyword">public</span> DefaultCaptchaAware(String id, String success, String fail) {
+        <span class = "keyword">this</span>.id = id;
+        <span class = "keyword">this</span>.success = success;
+        <span class = "keyword">this</span>.fail = fail;
+    }
+    @Override
+    <span class = "keyword">public</span> String id() {
+        <span class = "keyword">return</span> id;
+    }
+    @Override
+    <span class = "keyword">public</span> String success() {
+        <span class = "keyword">return</span> success;
+    }
+    @Override
+    <span class = "keyword">public</span> String fail() {
+        <span class = "keyword">return</span> fail;
+    }
+    <span class = "comment">/**
+     * 创建对象工具
+     * @param id
+     * @param success
+     * @param fail
+     * @return
+     */</span>
+    <span class = "keyword">public</span> <span class = "keyword">static</span> DefaultCaptchaAware newInstance(String id, String success, String fail) {
+        <span class = "keyword">return</span> <span class = "keyword">new</span> DefaultCaptchaAware(id, success, fail);
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha;
+<span class = "keyword">import</span> javax.servlet.http.HttpSession;
+<span class = "keyword">import</span> org.slf4j.Logger;
+<span class = "keyword">import</span> org.slf4j.LoggerFactory;
+<span class = "keyword">import</span> org.springframework.util.StringUtils;
+<span class = "keyword">import</span> javax.servlet.http.HttpSession;
+<span class = "comment">/**
+ * session提供
+ *
+ * @author Carl
+ * @date 2017/10/27
+ * @since
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> SessionCaptchaResultProvider <span class = "keyword">implements</span> ICaptchaResultProvider<HttpSession, String> {
+    <span class = "keyword">private</span> <span class = "keyword">static</span> <span class = "keyword">final</span> Logger LOGGER = LoggerFactory.getLogger(SessionCaptchaResultProvider.<span class = "keyword">class</span>);
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">void</span> store(HttpSession httpSession, String s) {
+        httpSession.setAttribute(CaptchaConstants.STORE_CODE, s);
+    }
+    @Override
+    <span class = "keyword">public</span> String get(HttpSession httpSession) {
+        <span class = "keyword">return</span> (String) httpSession.getAttribute(CaptchaConstants.STORE_CODE);
+    }
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">boolean</span> validate(HttpSession store, String code) {
+        String relCode = get(store);
+        <span class = "keyword">if</span> (!StringUtils.isEmpty(relCode) && relCode.equals(code)) {
+            //校验完清空
+            store(store, <span class = "keyword">null</span>);
+            <span class = "keyword">return</span> <span class = "keyword">true</span>;
+        }
+        <span class = "keyword">return</span> <span class = "keyword">false</span>;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha;
+<span class = "keyword">import</span> org.apereo.cas.web.AbstractDelegateController;
+<span class = "keyword">import</span> org.springframework.web.bind.annotation.GetMapping;
+<span class = "keyword">import</span> org.springframework.web.servlet.ModelAndView;
+<span class = "keyword">import</span> javax.servlet.http.HttpServletRequest;
+<span class = "keyword">import</span> javax.servlet.http.HttpServletResponse;
+<span class = "keyword">import</span> java.io.OutputStream;
+<span class = "comment">/**
+ * 验证码控制器
+ *
+ * @author Carl
+ * @date 2017/10/27
+ * @since
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> CaptchaController <span class = "keyword">extends</span> AbstractDelegateController {
+    <span class = "keyword">private</span> ICaptchaWriter<String> captchaWriter;
+    <span class = "keyword">private</span> SessionCaptchaResultAware<String> aware;
+    <span class = "keyword">public</span> CaptchaController(ICaptchaWriter<String> captchaWriter, SessionCaptchaResultAware<String> aware) {
+        <span class = "keyword">this</span>.captchaWriter = captchaWriter;
+        <span class = "keyword">this</span>.aware = aware;
+    }
+    <span class = "keyword">public</span> SessionCaptchaResultAware<String> getAware() {
+        <span class = "keyword">return</span> aware;
+    }
+    <span class = "keyword">public</span> ICaptchaWriter<String> getCaptchaWriter() {
+        <span class = "keyword">return</span> captchaWriter;
+    }
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">boolean</span> canHandle(HttpServletRequest request, HttpServletResponse response) {
+        <span class = "keyword">return</span> <span class = "keyword">true</span>;
+    }
+    @GetMapping(value = CaptchaConstants.REQUEST_MAPPING, produces = <span class = "literal">"image/png"</span>)
+    @Override
+    <span class = "keyword">protected</span> ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) <span class = "keyword">throws</span> Exception {
+        //设置response头信息
+        //禁止缓存
+        response.setHeader(<span class = "literal">"Cache-Control"</span>, <span class = "literal">"no-cache"</span>);
+        response.setContentType(<span class = "literal">"image/png"</span>);
+        OutputStream outputStream =  response.getOutputStream();
+        //存储验证码到session
+        String text = getAware().getAndStore(request.getSession());
+        getCaptchaWriter().write(text, outputStream);
+        <span class = "keyword">return</span> <span class = "keyword">null</span>;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha.string;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.ICaptchaWriter;
+<span class = "comment">/**
+ * 字符输出者
+ *
+ * @author Carl
+ * @date 2017/10/27
+ * @since 2.3.8
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">abstract</span> <span class = "keyword">class</span> StringCaptchaWriter <span class = "keyword">implements</span> ICaptchaWriter<String> {
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha.string;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.ICaptchaResultProvider;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.ITokenGenerator;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.SessionCaptchaResultAware;
+<span class = "comment">/**
+ * 字符串验证码识别器
+ *
+ * @author Carl
+ * @date 2017/10/27
+ * @since 2.3.8
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> StringCaptchaResultAware <span class = "keyword">extends</span> SessionCaptchaResultAware {
+    <span class = "keyword">public</span> StringCaptchaResultAware(ICaptchaResultProvider provider, ITokenGenerator generator) {
+        <span class = "keyword">super</span>(provider, generator);
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha.string;
+<span class = "keyword">import</span> com.carl.sso.support.captcha.ITokenGenerator;
+<span class = "comment">/**
+ * 字符串生成规则
+ *
+ * @author Carl
+ * @date 2017/10/27
+ * @since 2.3.8
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">abstract</span> <span class = "keyword">class</span> StringTokenGenerator <span class = "keyword">implements</span> ITokenGenerator<String> {
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha;
+<span class = "keyword">import</span> java.io.IOException;
+<span class = "keyword">import</span> java.io.OutputStream;
+<span class = "comment">/**
+ * 验证码输出者
+ *
+ * @author Carl
+ * @date 2017/10/27
+ * @since
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">interface</span> ICaptchaWriter<T> {
+    <span class = "comment">/**
+     * 对外写出验证码并且返回结果集
+     *
+     * @param outputStream
+     * @return
+     * @throws IOException
+     */</span>
+    <span class = "keyword">void</span> write(T t, OutputStream outputStream) <span class = "keyword">throws</span> IOException;
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "comment">/**
+ * 验证码服务模块
+ *
+ * @author Carl
+ * @date 2017/10/27
+ * @since
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.support.captcha;
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.sso.server;
+<span class = "keyword">import</span> org.apache.shiro.crypto.hash.ConfigurableHashService;
+<span class = "keyword">import</span> org.apache.shiro.crypto.hash.DefaultHashService;
+<span class = "keyword">import</span> org.apache.shiro.crypto.hash.HashRequest;
+<span class = "keyword">import</span> org.apache.shiro.util.ByteSource;
+<span class = "keyword">import</span> org.junit.Assert;
+<span class = "keyword">import</span> org.junit.Test;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/9/12
+ * @since JDK1.7
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> PasswordSaltTest {
+    <span class = "keyword">private</span> String staticSalt = <span class = "literal">"."</span>;
+    <span class = "keyword">private</span> String algorithmName = <span class = "literal">"SHA-1"</span>;
+    <span class = "keyword">private</span> String encodedPassword = <span class = "literal">"admin"</span>;
+    <span class = "keyword">private</span> String dynaSalt = <span class = "literal">"jn_admin"</span>;
+    @Test
+    <span class = "keyword">public</span> <span class = "keyword">void</span> test() <span class = "keyword">throws</span> Exception {
+        ConfigurableHashService hashService = <span class = "keyword">new</span> DefaultHashService();
+        hashService.setPrivateSalt(ByteSource.Util.bytes(<span class = "keyword">this</span>.staticSalt));
+        hashService.setHashAlgorithmName(<span class = "keyword">this</span>.algorithmName);
+        hashService.setHashIterations(<span class = "literal">1</span>);
+        HashRequest request = <span class = "keyword">new</span> HashRequest.Builder()
+                .setSalt(dynaSalt)
+                .setSource(encodedPassword)
+                .build();
+        String res =  hashService.computeHash(request).toHex();
+        System.out.println(res);
+        System.out.println(<span class = "literal">"7396cf54ad016b2c3bff9324da10f8943c0239a3"</span>.equals(res));
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> org.jasig.cas.authentication.handler;
+<span class = "keyword">import</span> org.springframework.security.crypto.password.PasswordEncoder;
+<span class = "comment">/** 
+ * @ClassName:CustomJeeSitePasswordEncoder 
+ * @Function: TODO ADD FUNCTION
+ * @Reason:   TODO ADD REASON
+ * @Date:     2018年10月16日 下午2:26:36 
+ * @author   luck 
+ * @version   
+ * @since    JDK 1.8
+ * @see       
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> CustomJeeSitePasswordEncoder <span class = "keyword">implements</span> PasswordEncoder {
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">final</span> String HASH_ALGORITHM = <span class = "literal">"SHA-1"</span>;
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">final</span> <span class = "keyword">int</span> HASH_INTERATIONS = <span class = "literal">1024</span>;
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">final</span> <span class = "keyword">int</span> SALT_SIZE = <span class = "literal">8</span>;
+    <span class = "keyword">private</span> String salt;
+    <span class = "keyword">public</span> String getSalt() {
+        <span class = "keyword">return</span> salt;
+    }
+    <span class = "keyword">public</span> <span class = "keyword">void</span> setSalt(String salt) {
+        <span class = "keyword">this</span>.salt = salt;
+    }
+    @Override
+    <span class = "keyword">public</span> String encode(CharSequence rawPassword) {
+        <span class = "keyword">return</span> <span class = "keyword">this</span>.entryptPassword(rawPassword.toString());
+    }
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">boolean</span> matches(CharSequence rawPassword, String encodedPassword) {
+        <span class = "keyword">return</span> <span class = "keyword">this</span>.validatePassword(rawPassword.toString(),encodedPassword);
+    }
+    <span class = "comment">/**
+     * 生成安全的密码，生成随机的16位salt并经过1024次 sha-1 hash
+     */</span>
+    <span class = "keyword">public</span>  String entryptPassword(String plainPassword) {
+        String plain = Encodes.unescapeHtml(plainPassword);
+        <span class = "keyword">byte</span>[] salt = Digests.generateSalt(SALT_SIZE);
+        <span class = "keyword">byte</span>[] hashPassword = Digests.sha1(plain.getBytes(), salt, HASH_INTERATIONS);
+        <span class = "keyword">return</span> Encodes.encodeHex(salt)+Encodes.encodeHex(hashPassword);
+    }
+    <span class = "comment">/**
+     * 验证密码
+     * @param plainPassword 明文密码
+     * @param password 密文密码
+     * @return 验证成功返回true
+     */</span>
+    <span class = "keyword">public</span>  <span class = "keyword">boolean</span> validatePassword(String plainPassword, String password) {
+        String plain = Encodes.unescapeHtml(plainPassword);
+        <span class = "keyword">byte</span>[] salt = Encodes.decodeHex(password.substring(<span class = "literal">0</span>,<span class = "literal">16</span>));
+        <span class = "keyword">byte</span>[] hashPassword = Digests.sha1(plain.getBytes(), salt, HASH_INTERATIONS);
+        <span class = "keyword">return</span> password.equals(Encodes.encodeHex(salt)+Encodes.encodeHex(hashPassword));
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> org.jasig.cas.authentication.handler;
+<span class = "keyword">import</span> java.io.IOException;
+<span class = "keyword">import</span> java.io.InputStream;
+<span class = "keyword">import</span> java.security.GeneralSecurityException;
+<span class = "keyword">import</span> java.security.MessageDigest;
+<span class = "keyword">import</span> java.security.SecureRandom;
+<span class = "keyword">import</span> org.apache.commons.lang3.Validate;
+<span class = "comment">/**
+ * 支持SHA-1/MD5消息摘要的工具类.
+ * 
+ * 返回ByteSource，可进一步被编码为Hex, Base64或UrlSafeBase64
+ * 
+ * @author calvin
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> Digests {
+    <span class = "keyword">private</span> <span class = "keyword">static</span> <span class = "keyword">final</span> String SHA1 = <span class = "literal">"SHA-1"</span>;
+    <span class = "keyword">private</span> <span class = "keyword">static</span> <span class = "keyword">final</span> String MD5 = <span class = "literal">"MD5"</span>;
+    <span class = "keyword">private</span> <span class = "keyword">static</span> SecureRandom random = <span class = "keyword">new</span> SecureRandom();
+    <span class = "comment">/**
+     * 对输入字符串进行md5散列.
+     */</span>
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">byte</span>[] md5(<span class = "keyword">byte</span>[] input) {
+        <span class = "keyword">return</span> digest(input, MD5, <span class = "keyword">null</span>, <span class = "literal">1</span>);
+    }
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">byte</span>[] md5(<span class = "keyword">byte</span>[] input, <span class = "keyword">int</span> iterations) {
+        <span class = "keyword">return</span> digest(input, MD5, <span class = "keyword">null</span>, iterations);
+    }
+    <span class = "comment">/**
+     * 对输入字符串进行sha1散列.
+     */</span>
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">byte</span>[] sha1(<span class = "keyword">byte</span>[] input) {
+        <span class = "keyword">return</span> digest(input, SHA1, <span class = "keyword">null</span>, <span class = "literal">1</span>);
+    }
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">byte</span>[] sha1(<span class = "keyword">byte</span>[] input, <span class = "keyword">byte</span>[] salt) {
+        <span class = "keyword">return</span> digest(input, SHA1, salt, <span class = "literal">1</span>);
+    }
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">byte</span>[] sha1(<span class = "keyword">byte</span>[] input, <span class = "keyword">byte</span>[] salt, <span class = "keyword">int</span> iterations) {
+        <span class = "keyword">return</span> digest(input, SHA1, salt, iterations);
+    }
+    <span class = "comment">/**
+     * 对字符串进行散列, 支持md5与sha1算法.
+     */</span>
+    <span class = "keyword">private</span> <span class = "keyword">static</span> <span class = "keyword">byte</span>[] digest(<span class = "keyword">byte</span>[] input, String algorithm, <span class = "keyword">byte</span>[] salt, <span class = "keyword">int</span> iterations) {
+        <span class = "keyword">try</span> {
+            MessageDigest digest = MessageDigest.getInstance(algorithm);
+            <span class = "keyword">if</span> (salt != <span class = "keyword">null</span>) {
+                digest.update(salt);
+            }
+            <span class = "keyword">byte</span>[] result = digest.digest(input);
+            <span class = "keyword">for</span> (<span class = "keyword">int</span> i = <span class = "literal">1</span>; i < iterations; i++) {
+                digest.reset();
+                result = digest.digest(result);
+            }
+            <span class = "keyword">return</span> result;
+        } <span class = "keyword">catch</span> (GeneralSecurityException e) {
+            <span class = "keyword">throw</span> unchecked(e);
+        }
+    }
+    <span class = "comment">/**
+     * 生成随机的Byte[]作为salt.
+     * 
+     * @param numBytes byte数组的大小
+     */</span>
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">byte</span>[] generateSalt(<span class = "keyword">int</span> numBytes) {
+        Validate.isTrue(numBytes > <span class = "literal">0</span>, <span class = "literal">"numBytes argument must be a positive integer (<span class = "literal">1</span> or larger)"</span>, numBytes);
+        <span class = "keyword">byte</span>[] bytes = <span class = "keyword">new</span> <span class = "keyword">byte</span>[numBytes];
+        random.nextBytes(bytes);
+        <span class = "keyword">return</span> bytes;
+    }
+    <span class = "comment">/**
+     * 对文件进行md5散列.
+     */</span>
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">byte</span>[] md5(InputStream input) <span class = "keyword">throws</span> IOException {
+        <span class = "keyword">return</span> digest(input, MD5);
+    }
+    <span class = "comment">/**
+     * 对文件进行sha1散列.
+     */</span>
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">byte</span>[] sha1(InputStream input) <span class = "keyword">throws</span> IOException {
+        <span class = "keyword">return</span> digest(input, SHA1);
+    }
+    <span class = "keyword">private</span> <span class = "keyword">static</span> <span class = "keyword">byte</span>[] digest(InputStream input, String algorithm) <span class = "keyword">throws</span> IOException {
+        <span class = "keyword">try</span> {
+            MessageDigest messageDigest = MessageDigest.getInstance(algorithm);
+            <span class = "keyword">int</span> bufferLength = <span class = "literal">8</span> * <span class = "literal">1024</span>;
+            <span class = "keyword">byte</span>[] buffer = <span class = "keyword">new</span> <span class = "keyword">byte</span>[bufferLength];
+            <span class = "keyword">int</span> read = input.read(buffer, <span class = "literal">0</span>, bufferLength);
+            <span class = "keyword">while</span> (read > -<span class = "literal">1</span>) {
+                messageDigest.update(buffer, <span class = "literal">0</span>, read);
+                read = input.read(buffer, <span class = "literal">0</span>, bufferLength);
+            }
+            <span class = "keyword">return</span> messageDigest.digest();
+        } <span class = "keyword">catch</span> (GeneralSecurityException e) {
+            <span class = "keyword">throw</span> unchecked(e);
+        }
+    }
+    <span class = "keyword">public</span> <span class = "keyword">static</span> RuntimeException unchecked(Exception e) {
+        <span class = "keyword">if</span> (e <span class = "keyword">instanceof</span> RuntimeException) {
+            <span class = "keyword">return</span> (RuntimeException) e;
+        } <span class = "keyword">else</span> {
+            <span class = "keyword">return</span> <span class = "keyword">new</span> RuntimeException(e);
+        }
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> org.jasig.cas.authentication.handler;
+<span class = "keyword">import</span> java.io.UnsupportedEncodingException;
+<span class = "keyword">import</span> java.net.URLDecoder;
+<span class = "keyword">import</span> java.net.URLEncoder;
+<span class = "keyword">import</span> org.apache.commons.codec.DecoderException;
+<span class = "keyword">import</span> org.apache.commons.codec.binary.Base64;
+<span class = "keyword">import</span> org.apache.commons.codec.binary.Hex;
+<span class = "keyword">import</span> org.apache.commons.lang3.StringEscapeUtils;
+<span class = "comment">/**
+ * 封装各种格式的编码解码工具类.
+ * 1.Commons-Codec的 hex/base64 编码
+ * 2.自制的base62 编码
+ * 3.Commons-Lang的xml/html escape
+ * 4.JDK提供的URLEncoder
+ * @author calvin
+ * @version 2013-01-15
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> Encodes {
+	<span class = "keyword">private</span> <span class = "keyword">static</span> <span class = "keyword">final</span> String DEFAULT_URL_ENCODING = <span class = "literal">"UTF-8"</span>;
+	<span class = "keyword">private</span> <span class = "keyword">static</span> <span class = "keyword">final</span> <span class = "keyword">char</span>[] BASE62 = <span class = "literal">"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"</span>.toCharArray();
+	<span class = "comment">/**
+	 * Hex编码.
+	 */</span>
+	<span class = "keyword">public</span> <span class = "keyword">static</span> String encodeHex(<span class = "keyword">byte</span>[] input) {
+		<span class = "keyword">return</span> <span class = "keyword">new</span> String(Hex.encodeHex(input));
+	}
+	<span class = "comment">/**
+	 * Hex解码.
+	 */</span>
+	<span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">byte</span>[] decodeHex(String input) {
+		<span class = "keyword">try</span> {
+			<span class = "keyword">return</span> Hex.decodeHex(input.toCharArray());
+		} <span class = "keyword">catch</span> (DecoderException e) {
+			<span class = "keyword">throw</span> unchecked(e);
+		}
+	}
+	<span class = "comment">/**
+	 * Base64编码.
+	 */</span>
+	<span class = "keyword">public</span> <span class = "keyword">static</span> String encodeBase64(<span class = "keyword">byte</span>[] input) {
+		<span class = "keyword">return</span> <span class = "keyword">new</span> String(Base64.encodeBase64(input));
+	}
+	<span class = "comment">/**
+	 * Base64编码.
+	 */</span>
+	<span class = "keyword">public</span> <span class = "keyword">static</span> String encodeBase64(String input) {
+		<span class = "keyword">try</span> {
+			<span class = "keyword">return</span> <span class = "keyword">new</span> String(Base64.encodeBase64(input.getBytes(DEFAULT_URL_ENCODING)));
+		} <span class = "keyword">catch</span> (UnsupportedEncodingException e) {
+			<span class = "keyword">return</span> <span class = "literal">""</span>;
+		}
+	}
+//	<span class = "comment">/**
+//	 * Base64编码, URL安全(将Base64中的URL非法字符'+'和'/'转为'-'和'_', 见RFC3548).
+//	 */</span>
+//	<span class = "keyword">public</span> <span class = "keyword">static</span> String encodeUrlSafeBase64(<span class = "keyword">byte</span>[] input) {
+//		<span class = "keyword">return</span> Base64.encodeBase64URLSafe(input);
+//	}
+	<span class = "comment">/**
+	 * Base64解码.
+	 */</span>
+	<span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">byte</span>[] decodeBase64(String input) {
+		<span class = "keyword">return</span> Base64.decodeBase64(input.getBytes());
+	}
+	<span class = "comment">/**
+	 * Base64解码.
+	 */</span>
+	<span class = "keyword">public</span> <span class = "keyword">static</span> String decodeBase64String(String input) {
+		<span class = "keyword">try</span> {
+			<span class = "keyword">return</span> <span class = "keyword">new</span> String(Base64.decodeBase64(input.getBytes()), DEFAULT_URL_ENCODING);
+		} <span class = "keyword">catch</span> (UnsupportedEncodingException e) {
+			<span class = "keyword">return</span> <span class = "literal">""</span>;
+		}
+	}
+	<span class = "comment">/**
+	 * Base62编码。
+	 */</span>
+	<span class = "keyword">public</span> <span class = "keyword">static</span> String encodeBase62(<span class = "keyword">byte</span>[] input) {
+		<span class = "keyword">char</span>[] chars = <span class = "keyword">new</span> <span class = "keyword">char</span>[input.length];
+		<span class = "keyword">for</span> (<span class = "keyword">int</span> i = <span class = "literal">0</span>; i < input.length; i++) {
+			chars[i] = BASE62[((input[i] & 0xFF) % BASE62.length)];
+		}
+		<span class = "keyword">return</span> <span class = "keyword">new</span> String(chars);
+	}
+	<span class = "comment">/**
+	 * Html 转码.
+	 */</span>
+	<span class = "keyword">public</span> <span class = "keyword">static</span> String escapeHtml(String html) {
+		<span class = "keyword">return</span> StringEscapeUtils.escapeHtml4(html);
+	}
+	<span class = "comment">/**
+	 * Html 解码.
+	 */</span>
+	<span class = "keyword">public</span> <span class = "keyword">static</span> String unescapeHtml(String htmlEscaped) {
+		<span class = "keyword">return</span> StringEscapeUtils.unescapeHtml4(htmlEscaped);
+	}
+	<span class = "comment">/**
+	 * Xml 转码.
+	 */</span>
+	<span class = "keyword">public</span> <span class = "keyword">static</span> String escapeXml(String xml) {
+		<span class = "keyword">return</span> StringEscapeUtils.escapeXml10(xml);
+	}
+	<span class = "comment">/**
+	 * Xml 解码.
+	 */</span>
+	<span class = "keyword">public</span> <span class = "keyword">static</span> String unescapeXml(String xmlEscaped) {
+		<span class = "keyword">return</span> StringEscapeUtils.unescapeXml(xmlEscaped);
+	}
+	<span class = "comment">/**
+	 * URL 编码, Encode默认为UTF-8. 
+	 */</span>
+	<span class = "keyword">public</span> <span class = "keyword">static</span> String urlEncode(String part) {
+		<span class = "keyword">try</span> {
+			<span class = "keyword">return</span> URLEncoder.encode(part, DEFAULT_URL_ENCODING);
+		} <span class = "keyword">catch</span> (UnsupportedEncodingException e) {
+			<span class = "keyword">throw</span> unchecked(e);
+		}
+	}
+	<span class = "comment">/**
+	 * URL 解码, Encode默认为UTF-8. 
+	 */</span>
+	<span class = "keyword">public</span> <span class = "keyword">static</span> String urlDecode(String part) {
+		<span class = "keyword">try</span> {
+			<span class = "keyword">return</span> URLDecoder.decode(part, DEFAULT_URL_ENCODING);
+		} <span class = "keyword">catch</span> (UnsupportedEncodingException e) {
+			<span class = "keyword">throw</span> unchecked(e);
+		}
+	}
+    <span class = "keyword">public</span> <span class = "keyword">static</span> RuntimeException unchecked(Exception e) {
+        <span class = "keyword">if</span> (e <span class = "keyword">instanceof</span> RuntimeException) {
+            <span class = "keyword">return</span> (RuntimeException) e;
+        } <span class = "keyword">else</span> {
+            <span class = "keyword">return</span> <span class = "keyword">new</span> RuntimeException(e);
+        }
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.sso.monitor;
+<span class = "keyword">import</span> de.codecentric.boot.admin.config.EnableAdminServer;
+<span class = "keyword">import</span> org.springframework.boot.SpringApplication;
+<span class = "keyword">import</span> org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+<span class = "keyword">import</span> org.springframework.context.annotation.Configuration;
+<span class = "comment">/**
+ * 认证中心监控平台，监控各服务运行情况
+ * @author Carl
+ */</span>
+@Configuration
+@EnableAutoConfiguration
+@EnableAdminServer
+<span class = "keyword">public</span> <span class = "keyword">class</span> MonitorApplication {
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">void</span> main(String[] args) {
+        SpringApplication.run(MonitorApplication.<span class = "keyword">class</span>, args);
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.client.demo.proxy.controller;
+<span class = "keyword">import</span> com.github.scribejava.core.extractors.OAuth2AccessTokenExtractor;
+<span class = "keyword">import</span> com.github.scribejava.core.model.OAuth2AccessToken;
+<span class = "keyword">import</span> com.github.scribejava.core.model.OAuthConstants;
+<span class = "keyword">import</span> com.github.scribejava.core.model.Response;
+<span class = "keyword">import</span> org.springframework.beans.factory.annotation.Autowired;
+<span class = "keyword">import</span> org.springframework.http.*;
+<span class = "keyword">import</span> org.springframework.util.LinkedMultiValueMap;
+<span class = "keyword">import</span> org.springframework.util.MultiValueMap;
+<span class = "keyword">import</span> org.springframework.web.bind.annotation.RequestMapping;
+<span class = "keyword">import</span> org.springframework.web.bind.annotation.RequestParam;
+<span class = "keyword">import</span> org.springframework.web.bind.annotation.RestController;
+<span class = "keyword">import</span> org.springframework.web.client.RestTemplate;
+<span class = "keyword">import</span> javax.servlet.http.HttpServletResponse;
+<span class = "keyword">import</span> java.util.HashMap;
+<span class = "keyword">import</span> java.util.Map;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/10/21
+ * @since
+ */</span>
+@RestController
+@RequestMapping(<span class = "literal">"/token"</span>)
+<span class = "keyword">public</span> <span class = "keyword">class</span> AccessTokenController {
+    <span class = "keyword">private</span> OAuth2AccessTokenExtractor tokenExtractor = OAuth2AccessTokenExtractor.instance();
+    @Autowired
+    <span class = "keyword">private</span> RestTemplate restTemplate;
+    <span class = "comment">/**
+     * qq代理转发
+     *
+     * @return
+     */</span>
+    @RequestMapping(value = <span class = "literal">"/qq"</span>, produces = {<span class = "literal">"application/json"</span>})
+    <span class = "keyword">public</span> Object qq(
+            @RequestParam(OAuthConstants.CLIENT_ID) String client_id,
+            @RequestParam(OAuthConstants.CLIENT_SECRET) String client_secret,
+            @RequestParam(OAuthConstants.CODE) String code,
+            @RequestParam(OAuthConstants.REDIRECT_URI) String redirect_uri,
+            @RequestParam(OAuthConstants.GRANT_TYPE) String authorization_code,
+            HttpServletResponse response) <span class = "keyword">throws</span> Exception {
+        HttpHeaders headers = <span class = "keyword">new</span> HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        MultiValueMap<String, String> map = <span class = "keyword">new</span> LinkedMultiValueMap<>();
+        map.add(OAuthConstants.CLIENT_ID, client_id);
+        map.add(OAuthConstants.CLIENT_SECRET, client_secret);
+        map.add(OAuthConstants.CODE, code);
+        map.add(OAuthConstants.REDIRECT_URI, redirect_uri);
+        map.add(OAuthConstants.GRANT_TYPE, authorization_code);
+        HttpEntity<MultiValueMap<String, String>> request = <span class = "keyword">new</span> HttpEntity<>(map, headers);
+        ResponseEntity<String> resp = restTemplate.exchange(<span class = "literal">"https://graph.qq.com/oauth2.<span class = "literal">0</span>/token"</span>, HttpMethod.POST, request, String.<span class = "keyword">class</span>);
+        response.setContentType(<span class = "literal">"application/json"</span>);
+        OAuth2AccessToken token = tokenExtractor.extract(<span class = "keyword">new</span> Response(
+                resp.getStatusCodeValue(),
+                resp.toString(),
+                resp.getHeaders().toSingleValueMap(),
+                resp.getBody(), <span class = "keyword">null</span>
+        ));
+        //返回结果
+        Map<String, Object> res = <span class = "keyword">new</span> HashMap<>();
+        res.put(<span class = "literal">"access_token"</span>, token.getAccessToken());
+        res.put(<span class = "literal">"token_type"</span>, token.getTokenType());
+        res.put(<span class = "literal">"expires_in"</span>, token.getExpiresIn());
+        res.put(<span class = "literal">"refresh_token"</span>, token.getRefreshToken());
+        res.put(<span class = "literal">"error_description"</span>, token.getTokenType());
+        res.put(<span class = "literal">"scope"</span>, token.getScope());
+        <span class = "keyword">return</span> res;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.client.demo.proxy.controller;
+<span class = "keyword">import</span> org.springframework.beans.factory.annotation.Autowired;
+<span class = "keyword">import</span> org.springframework.http.HttpMethod;
+<span class = "keyword">import</span> org.springframework.http.ResponseEntity;
+<span class = "keyword">import</span> org.springframework.web.bind.annotation.RequestMapping;
+<span class = "keyword">import</span> org.springframework.web.bind.annotation.RequestParam;
+<span class = "keyword">import</span> org.springframework.web.bind.annotation.RestController;
+<span class = "keyword">import</span> org.springframework.web.client.RestTemplate;
+<span class = "keyword">import</span> javax.servlet.http.HttpServletResponse;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/10/21
+ * @since
+ */</span>
+@RestController
+@RequestMapping(<span class = "literal">"/user"</span>)
+<span class = "keyword">public</span> <span class = "keyword">class</span> UserController {
+    @Autowired
+    <span class = "keyword">private</span> RestTemplate restTemplate;
+    <span class = "comment">/**
+     * qq代理转发
+     * @return
+     */</span>
+    @RequestMapping(value = <span class = "literal">"/qq"</span>, produces = {<span class = "literal">"application/json"</span>})
+    <span class = "keyword">public</span> Object qq(@RequestParam(<span class = "literal">"access_token"</span>) String access_token, HttpServletResponse response) {
+        ResponseEntity<String> resp =  restTemplate.exchange(<span class = "literal">"https://graph.qq.com/oauth2.<span class = "literal">0</span>/me?access_token="</span> + access_token, HttpMethod.GET, <span class = "keyword">null</span>, String.<span class = "keyword">class</span>);
+        String res = resp.getBody();
+        //todo 这里应该判断拿不到open应该为失败，设置错误状态码
+        response.setContentType(<span class = "literal">"application/json"</span>);
+        <span class = "keyword">return</span> res.replace(<span class = "literal">"callback( "</span>,<span class = "literal">""</span>).replace(<span class = "literal">" );"</span>, <span class = "literal">""</span>).replace(<span class = "literal">"\n"</span>, <span class = "literal">""</span>);
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.client.demo.proxy;
+<span class = "keyword">import</span> org.springframework.beans.factory.annotation.Autowired;
+<span class = "keyword">import</span> org.springframework.boot.SpringApplication;
+<span class = "keyword">import</span> org.springframework.boot.autoconfigure.SpringBootApplication;
+<span class = "keyword">import</span> org.springframework.boot.web.client.RestTemplateBuilder;
+<span class = "keyword">import</span> org.springframework.context.annotation.Bean;
+<span class = "keyword">import</span> org.springframework.web.client.RestTemplate;
+<span class = "comment">/**
+ * 中转客户端
+ *
+ * @author Carl
+ * @date 2017/10/21
+ * @since
+ */</span>
+@SpringBootApplication
+<span class = "keyword">public</span> <span class = "keyword">class</span> ClientProxyApplication {
+    <span class = "comment">// 启动的时候要注意，由于我们在controller中注入了RestTemplate，所以启动的时候需要实例化该类的一个实例</span>
+    @Autowired
+    <span class = "keyword">private</span> RestTemplateBuilder builder;
+    <span class = "comment">// 使用RestTemplateBuilder来实例化RestTemplate对象，spring默认已经注入了RestTemplateBuilder实例</span>
+    @Bean
+    <span class = "keyword">public</span> RestTemplate restTemplate() {
+        <span class = "keyword">return</span> builder.build();
+    }
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">void</span> main(String[] args) {
+        SpringApplication.run(ClientProxyApplication.<span class = "keyword">class</span>, args);
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.sso.client.demo;
+<span class = "keyword">import</span> org.jasig.cas.client.authentication.UrlPatternMatcherStrategy;
+<span class = "keyword">import</span> org.jasig.cas.client.session.SingleSignOutHttpSessionListener;
+<span class = "keyword">import</span> org.slf4j.Logger;
+<span class = "keyword">import</span> org.slf4j.LoggerFactory;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/9/28
+ * @since 1.5.0
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> SimpleUrlPatternMatcherStrategy <span class = "keyword">implements</span> UrlPatternMatcherStrategy {
+    <span class = "keyword">protected</span> <span class = "keyword">final</span> Logger logger = LoggerFactory.getLogger(getClass());
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">boolean</span> matches(String url) {
+        logger.debug(<span class = "literal">"访问路径："</span> + url);
+        <span class = "keyword">return</span> url.contains(<span class = "literal">"zhangsan.jsp"</span>);
+    }
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">void</span> setPattern(String pattern) {
+        SingleSignOutHttpSessionListener d = <span class = "keyword">new</span> SingleSignOutHttpSessionListener();
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.shiro.client.demo.core;
+<span class = "keyword">import</span> io.buji.pac4j.subject.Pac4jPrincipal;
+<span class = "comment">/**
+ * 判断用户是否已经绑定
+ *
+ * @author Carl
+ * @date 2017/10/8
+ * @since 1.5.0
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">interface</span> PrincipalBindResolver {
+    <span class = "comment">/**
+     * 判断用户是否已经绑定
+     *
+     * @param id
+     * @return
+     */</span>
+    <span class = "keyword">boolean</span> isBind(String id);
+    <span class = "comment">/**
+     * 把当前用户绑定到实际的用户数
+     *
+     * @param principal 当前用户
+     * @param user      目标用户
+     */</span>
+    <span class = "keyword">void</span> bind(Pac4jPrincipal principal, Object user) <span class = "keyword">throws</span> Exception;
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.shiro.client.demo.core.github;
+<span class = "keyword">import</span> com.carl.auth.shiro.client.demo.core.PrincipalBindResolver;
+<span class = "keyword">import</span> io.buji.pac4j.subject.Pac4jPrincipal;
+<span class = "keyword">import</span> java.util.List;
+<span class = "comment">/**
+ * github内存id取决器
+ *
+ * @author Carl
+ * @date 2017/10/8
+ * @since 1.5.0
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> GitHubMemoryPrincipalBindResolver <span class = "keyword">implements</span> PrincipalBindResolver {
+    <span class = "keyword">private</span> List<String> idStorage;
+    <span class = "keyword">public</span> GitHubMemoryPrincipalBindResolver(List<String> idStorage) {
+        <span class = "keyword">this</span>.idStorage = idStorage;
+    }
+    <span class = "keyword">public</span> List<String> getIdStorage() {
+        <span class = "keyword">return</span> idStorage;
+    }
+    <span class = "keyword">public</span> <span class = "keyword">void</span> setIdStorage(List<String> idStorage) {
+        <span class = "keyword">this</span>.idStorage = idStorage;
+    }
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">boolean</span> isBind(String id) {
+        <span class = "keyword">return</span> <span class = "keyword">this</span>.idStorage.contains(id);
+    }
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">void</span> bind(Pac4jPrincipal principal, Object user) {
+        //添加即为绑定，因为切面那边判断访问首页时，是否已经在当前容器存在该用户
+        getIdStorage().add(user.toString());
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "comment">/*
+ * 版权所有.(c)2008-2017. 卡尔科技工作室
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.shiro.client.demo.core.github;
+<span class = "keyword">import</span> com.carl.auth.shiro.client.demo.core.ClientStrategy;
+<span class = "keyword">import</span> com.carl.auth.shiro.client.demo.core.PrincipalBindResolver;
+<span class = "keyword">import</span> com.carl.auth.shiro.client.demo.exception.NotBindException;
+<span class = "keyword">import</span> io.buji.pac4j.subject.Pac4jPrincipal;
+<span class = "keyword">import</span> org.aspectj.lang.JoinPoint;
+<span class = "keyword">import</span> org.slf4j.Logger;
+<span class = "keyword">import</span> org.slf4j.LoggerFactory;
+<span class = "comment">/**
+ * github处理策略
+ *
+ * @author Carl
+ * @date 2017/10/8
+ * @since 1.5.0
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> GitHubClientStrategy <span class = "keyword">implements</span> ClientStrategy {
+    <span class = "keyword">private</span> Logger logger = LoggerFactory.getLogger(<span class = "keyword">this</span>.getClass());
+    //用户绑定决定
+    <span class = "keyword">private</span> PrincipalBindResolver resolver;
+    <span class = "keyword">public</span> GitHubClientStrategy(PrincipalBindResolver resolver) {
+        <span class = "keyword">this</span>.resolver = resolver;
+    }
+    @Override
+    <span class = "keyword">public</span> String name() {
+        <span class = "keyword">return</span> <span class = "literal">"github"</span>;
+    }
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">void</span> handle(JoinPoint joinPoint, Pac4jPrincipal pac4jPrincipal) <span class = "keyword">throws</span> Exception {
+        //todo 未登录转发页面处理
+        logger.debug(<span class = "literal">"GitHub用户未绑定"</span>);
+        //抛出异常进行吹
+        <span class = "keyword">throw</span> <span class = "keyword">new</span> NotBindException().setClientName(name()).setRedirectUrl(<span class = "literal">"bind/github"</span>).setPrincipal(pac4jPrincipal);
+    }
+    @Override
+    <span class = "keyword">public</span> <span class = "keyword">boolean</span> isBind(Pac4jPrincipal principal) {
+        <span class = "keyword">return</span> resolver.isBind(principal.getProfile().getId());
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.shiro.client.demo.core;
+<span class = "keyword">import</span> java.util.HashMap;
+<span class = "keyword">import</span> java.util.Map;
+<span class = "comment">/**
+ * 客户端存储器
+ *
+ * @author Carl
+ * @date 2017/10/8
+ * @since 1.5.0
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> ClientStrategyFactory {
+    <span class = "keyword">private</span> Map<String , ClientStrategy> clientStrategy = <span class = "keyword">new</span> HashMap<>();
+    <span class = "keyword">public</span> ClientStrategyFactory(Map<String, ClientStrategy> clientStrategy) {
+        <span class = "keyword">this</span>.clientStrategy = clientStrategy;
+    }
+    <span class = "keyword">public</span> Map<String, ClientStrategy> getClientStrategy() {
+        <span class = "keyword">return</span> clientStrategy;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.shiro.client.demo.core;
+<span class = "keyword">import</span> io.buji.pac4j.subject.Pac4jPrincipal;
+<span class = "keyword">import</span> org.aspectj.lang.JoinPoint;
+<span class = "comment">/**
+ * 根据客户端进行匹配。若是当前客户端，并且未绑定，则进行handle处理，
+ * 进一步为了通过第三方登录用户未绑定时进行绑定
+ *
+ * @author Carl
+ * @date 2017/10/8
+ * @since 1.5.0
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">interface</span> ClientStrategy {
+    <span class = "comment">/**
+     * clientName
+     *
+     * @return
+     */</span>
+    String name();
+    <span class = "comment">/**
+     * 若匹配出则进行终端处理
+     *
+     * @param joinPoint
+     * @param pac4jPrincipal
+     */</span>
+    <span class = "keyword">void</span> handle(JoinPoint joinPoint, Pac4jPrincipal pac4jPrincipal) <span class = "keyword">throws</span> Exception;
+    <span class = "comment">/**
+     * 判断是否已绑定
+     *
+     * @param principal
+     * @return
+     */</span>
+    <span class = "keyword">boolean</span> isBind(Pac4jPrincipal principal);
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.shiro.client.demo.controller;
+<span class = "keyword">import</span> com.carl.auth.shiro.client.demo.exception.NotBindException;
+<span class = "keyword">import</span> org.springframework.web.bind.annotation.ControllerAdvice;
+<span class = "keyword">import</span> org.springframework.web.bind.annotation.ExceptionHandler;
+<span class = "keyword">import</span> org.springframework.web.servlet.ModelAndView;
+<span class = "keyword">import</span> javax.servlet.http.HttpServletRequest;
+<span class = "comment">/**
+ *
+ *
+ * @author Carl
+ * @date 2017/10/9
+ * @since 1.5.0
+ */</span>
+@ControllerAdvice
+<span class = "keyword">public</span> <span class = "keyword">class</span> NotBindExceptionController {
+    <span class = "comment">/**
+     * 抛出未绑定异常时进行转发页面处理
+     *
+     * @param e
+     * @return
+     */</span>
+    @ExceptionHandler(value = NotBindException.<span class = "keyword">class</span>)
+    <span class = "keyword">public</span> ModelAndView notBindHandler(NotBindException e) {
+        <span class = "keyword">return</span> <span class = "keyword">new</span> ModelAndView(<span class = "literal">"redirect:"</span> + e.getRedirectUrl());
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.shiro.client.demo.controller;
+<span class = "keyword">import</span> com.carl.auth.shiro.client.demo.core.PrincipalBindResolver;
+<span class = "keyword">import</span> io.buji.pac4j.subject.Pac4jPrincipal;
+<span class = "keyword">import</span> org.slf4j.Logger;
+<span class = "keyword">import</span> org.slf4j.LoggerFactory;
+<span class = "keyword">import</span> org.springframework.beans.factory.annotation.Autowired;
+<span class = "keyword">import</span> org.springframework.stereotype.Controller;
+<span class = "keyword">import</span> org.springframework.ui.Model;
+<span class = "keyword">import</span> org.springframework.web.bind.annotation.PathVariable;
+<span class = "keyword">import</span> org.springframework.web.bind.annotation.RequestMapping;
+<span class = "keyword">import</span> javax.servlet.http.HttpServletRequest;
+<span class = "comment">/**
+ * 绑定页面控制器
+ *
+ * @author Carl
+ * @date 2017/10/9
+ * @since
+ */</span>
+@Controller
+<span class = "keyword">public</span> <span class = "keyword">class</span> BindController {
+    <span class = "keyword">private</span> Logger logger = LoggerFactory.getLogger(<span class = "keyword">this</span>.getClass());
+    @Autowired
+    <span class = "keyword">private</span> PrincipalBindResolver bindResolver;
+    <span class = "comment">/**
+     * 转发绑定页面
+     *
+     * @param client
+     * @return
+     */</span>
+    @RequestMapping(<span class = "literal">"/bind/{client}"</span>)
+    <span class = "keyword">public</span> String bindPage(@PathVariable(<span class = "literal">"client"</span>) String client, Model model, HttpServletRequest request) {
+        Pac4jPrincipal pac4jPrincipal = (Pac4jPrincipal) request.getUserPrincipal();
+        model.addAttribute(<span class = "literal">"user"</span>, pac4jPrincipal.getProfile().getId());
+        <span class = "keyword">return</span> <span class = "literal">"bind/"</span> + client;
+    }
+    @RequestMapping(<span class = "literal">"/bind/user"</span>)
+    <span class = "keyword">public</span> String bindPage(HttpServletRequest request) <span class = "keyword">throws</span> Exception {
+        Pac4jPrincipal pac4jPrincipal = (Pac4jPrincipal) request.getUserPrincipal();
+        //目前仅仅支持github绑定方式，其他未实现
+        logger.info(<span class = "literal">"绑定用户："</span> + request.getParameter(<span class = "literal">"user"</span>));
+        //绑定
+        bindResolver.bind(pac4jPrincipal, request.getParameter(<span class = "literal">"user"</span>));
+        //返回首页
+        <span class = "keyword">return</span> <span class = "literal">"redirect:/"</span>;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.shiro.client.demo.controller;
+<span class = "keyword">import</span> org.springframework.stereotype.Controller;
+<span class = "keyword">import</span> org.springframework.ui.Model;
+<span class = "keyword">import</span> org.springframework.web.bind.annotation.GetMapping;
+<span class = "keyword">import</span> javax.servlet.http.HttpServletRequest;
+<span class = "keyword">import</span> java.security.Principal;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/9/16
+ * @since 1.0.0
+ */</span>
+@Controller
+<span class = "keyword">public</span> <span class = "keyword">class</span> IndexController {
+    @GetMapping(<span class = "literal">"/"</span>)
+    <span class = "keyword">public</span> String index(HttpServletRequest request, Model model) {
+        //用户详细信息
+        Principal principal = request.getUserPrincipal();
+        model.addAttribute(<span class = "literal">"user"</span>, principal);
+        //打开index.html页面
+        <span class = "keyword">return</span> <span class = "literal">"index"</span>;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.shiro.client.demo.controller;
+<span class = "keyword">import</span> org.springframework.web.bind.annotation.GetMapping;
+<span class = "keyword">import</span> org.springframework.web.bind.annotation.PathVariable;
+<span class = "keyword">import</span> org.springframework.web.bind.annotation.RequestMapping;
+<span class = "keyword">import</span> org.springframework.web.bind.annotation.RestController;
+<span class = "keyword">import</span> javax.servlet.http.HttpServletRequest;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/9/16
+ * @since 1.0.0
+ */</span>
+@RestController()
+@RequestMapping(<span class = "literal">"/user"</span>)
+<span class = "keyword">public</span> <span class = "keyword">class</span> UserController {
+    @GetMapping(<span class = "literal">"/{id}"</span>)
+    <span class = "keyword">public</span> Object user(@PathVariable(value = <span class = "literal">"id"</span>) String id) {
+        <span class = "keyword">return</span> <span class = "literal">"users page:"</span> + id;
+    }
+    @GetMapping(<span class = "literal">"/detail"</span>)
+    <span class = "keyword">public</span> Object detail(HttpServletRequest request) {
+        //用户详细信息
+        <span class = "keyword">return</span> request.getUserPrincipal();
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.shiro.client.demo;
+<span class = "keyword">import</span> org.springframework.boot.SpringApplication;
+<span class = "keyword">import</span> org.springframework.boot.autoconfigure.SpringBootApplication;
+<span class = "keyword">import</span> org.springframework.context.annotation.EnableAspectJAutoProxy;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/10/8
+ * @since 1.5.0
+ */</span>
+@SpringBootApplication
+@EnableAspectJAutoProxy
+<span class = "keyword">public</span> <span class = "keyword">class</span> ShiroClientApplication {
+    <span class = "keyword">public</span> <span class = "keyword">static</span> <span class = "keyword">void</span> main(String[] args) {
+        SpringApplication.run(ShiroClientApplication.<span class = "keyword">class</span>, args);
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.shiro.client.demo.aspect;
+<span class = "keyword">import</span> com.carl.auth.shiro.client.demo.core.ClientStrategy;
+<span class = "keyword">import</span> com.carl.auth.shiro.client.demo.core.ClientStrategyFactory;
+<span class = "keyword">import</span> io.buji.pac4j.subject.Pac4jPrincipal;
+<span class = "keyword">import</span> org.aspectj.lang.JoinPoint;
+<span class = "keyword">import</span> org.aspectj.lang.annotation.Aspect;
+<span class = "keyword">import</span> org.aspectj.lang.annotation.Before;
+<span class = "keyword">import</span> org.aspectj.lang.annotation.Pointcut;
+<span class = "keyword">import</span> org.slf4j.Logger;
+<span class = "keyword">import</span> org.slf4j.LoggerFactory;
+<span class = "keyword">import</span> org.springframework.beans.factory.annotation.Autowired;
+<span class = "keyword">import</span> org.springframework.stereotype.Component;
+<span class = "keyword">import</span> org.springframework.web.context.request.RequestContextHolder;
+<span class = "keyword">import</span> org.springframework.web.context.request.ServletRequestAttributes;
+<span class = "keyword">import</span> javax.servlet.http.HttpServletRequest;
+<span class = "keyword">import</span> java.security.Principal;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/10/8
+ * @since 1.5.0
+ */</span>
+@Aspect
+@Component
+<span class = "keyword">public</span> <span class = "keyword">class</span> ThirdPartyLoginAspect {
+    <span class = "keyword">private</span> Logger logger = LoggerFactory.getLogger(<span class = "keyword">this</span>.getClass());
+    @Autowired
+    <span class = "keyword">private</span> ClientStrategyFactory clientStrategyFactory;
+    <span class = "comment">/**
+     * 定义一个切入点.
+     * <p>
+     * 解释下：
+     * <p>
+     * <p>
+     * <p>
+     * ~ 第一个 * 代表任意修饰符及任意返回值.
+     * <p>
+     * ~ 第二个 * 任意包名
+     * <p>
+     * ~ 第三个 * 代表任意方法.
+     * <p>
+     * ~ 第四个 * 定义在web包或者子包
+     * <p>
+     * ~ 第五个 * 任意方法
+     * <p>
+     * ~ .. 匹配任意数量的参数.
+     */</span>
+    @Pointcut(<span class = "literal">"execution(public * com.carl.auth..*.controller.IndexController.*(..))"</span>)
+    <span class = "keyword">public</span> <span class = "keyword">void</span> loginHandle() {
+    }
+    @Before(<span class = "literal">"loginHandle()"</span>)
+    <span class = "keyword">public</span> <span class = "keyword">void</span> doBefore(JoinPoint pjp) <span class = "keyword">throws</span> Throwable {
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+        Principal principal = request.getUserPrincipal();
+        <span class = "keyword">if</span> (principal != <span class = "keyword">null</span> && principal <span class = "keyword">instanceof</span> Pac4jPrincipal) {
+            logger.debug(<span class = "literal">"准备判断用户绑定状态"</span>);
+            Pac4jPrincipal pac4jPrincipal = (Pac4jPrincipal) principal;
+            //获取认证客户端
+            String clientName = (String) pac4jPrincipal.getProfile().getAttribute(<span class = "literal">"clientName"</span>);
+            //获取客户端策略
+            ClientStrategy clientStrategy = clientStrategyFactory.getClientStrategy().get(clientName);
+            <span class = "keyword">if</span> (clientStrategy != <span class = "keyword">null</span>) {
+                //判断该客户端是否已经有绑定用户
+                <span class = "keyword">if</span> (!clientStrategy.isBind(pac4jPrincipal)) {
+                    logger.debug(<span class = "literal">"用户["</span> + pac4jPrincipal.getProfile().getId() + <span class = "literal">"]通过"</span> + clientStrategy.name() + <span class = "literal">"登录尚未绑定"</span>);
+                    //未绑定给予处理
+                    clientStrategy.handle(pjp, pac4jPrincipal);
+                }
+            }
+        }
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.shiro.client.demo.confg;
+<span class = "keyword">import</span> io.buji.pac4j.realm.Pac4jRealm;
+<span class = "keyword">import</span> org.apache.shiro.realm.Realm;
+<span class = "keyword">import</span> org.springframework.context.annotation.Bean;
+<span class = "keyword">import</span> org.springframework.context.annotation.Configuration;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/10/8
+ * @since 1.5.0
+ */</span>
+@Configuration
+<span class = "keyword">public</span> <span class = "keyword">class</span> RealmConfiguration {
+    @Bean
+    <span class = "keyword">public</span> Realm pac4jRealm() {
+        <span class = "keyword">return</span> <span class = "keyword">new</span> Pac4jRealm();
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.shiro.client.demo.confg;
+<span class = "keyword">import</span> com.carl.auth.shiro.client.demo.confg.pros.GithubProperties;
+<span class = "keyword">import</span> com.carl.auth.shiro.client.demo.core.ClientStrategy;
+<span class = "keyword">import</span> com.carl.auth.shiro.client.demo.core.ClientStrategyFactory;
+<span class = "keyword">import</span> com.carl.auth.shiro.client.demo.core.PrincipalBindResolver;
+<span class = "keyword">import</span> com.carl.auth.shiro.client.demo.core.github.GitHubClientStrategy;
+<span class = "keyword">import</span> com.carl.auth.shiro.client.demo.core.github.GitHubMemoryPrincipalBindResolver;
+<span class = "keyword">import</span> org.springframework.beans.factory.annotation.Autowired;
+<span class = "keyword">import</span> org.springframework.context.annotation.Bean;
+<span class = "keyword">import</span> org.springframework.context.annotation.Configuration;
+<span class = "keyword">import</span> org.springframework.context.annotation.Profile;
+<span class = "keyword">import</span> java.util.HashMap;
+<span class = "keyword">import</span> java.util.Map;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/10/8
+ * @since 1.5.0
+ */</span>
+@Configuration
+@Profile(<span class = "literal">"dev"</span>)
+<span class = "keyword">public</span> <span class = "keyword">class</span> ClientConfiguration {
+    @Autowired
+    <span class = "keyword">private</span> GithubProperties properties;
+    @Bean
+    <span class = "keyword">protected</span> ClientStrategyFactory clientStrategyFactory() {
+        Map<String, ClientStrategy> clientStrategyMap = <span class = "keyword">new</span> HashMap<>();
+        GitHubClientStrategy clientStrategy = <span class = "keyword">new</span> GitHubClientStrategy(bindResolver());
+        clientStrategyMap.put(clientStrategy.name(), clientStrategy);
+        <span class = "keyword">return</span> <span class = "keyword">new</span> ClientStrategyFactory(clientStrategyMap);
+    }
+    <span class = "comment">/**
+     * 绑定用户取决器
+     * @return
+     */</span>
+    @Bean
+    <span class = "keyword">protected</span> PrincipalBindResolver bindResolver() {
+        GitHubMemoryPrincipalBindResolver gitHubBinder = <span class = "keyword">new</span> GitHubMemoryPrincipalBindResolver(properties.getBindId());
+        <span class = "keyword">return</span> gitHubBinder;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.shiro.client.demo.confg.pros;
+<span class = "keyword">import</span> org.springframework.boot.context.properties.ConfigurationProperties;
+<span class = "keyword">import</span> org.springframework.stereotype.Component;
+<span class = "keyword">import</span> java.util.ArrayList;
+<span class = "keyword">import</span> java.util.List;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/10/8
+ * @since
+ */</span>
+@Component
+@ConfigurationProperties(prefix="github"</span>) //接收application.yml中的github下面的属性
+<span class = "keyword">public</span> <span class = "keyword">class</span> GithubProperties {
+    <span class = "keyword">private</span> List<String> bindId = <span class = "keyword">new</span> ArrayList<>();
+    <span class = "keyword">public</span> List<String> getBindId() {
+        <span class = "keyword">return</span> bindId;
+    }
+    <span class = "keyword">public</span> GithubProperties setBindId(List<String> bindId) {
+        <span class = "keyword">this</span>.bindId = bindId;
+        <span class = "keyword">return</span> <span class = "keyword">this</span>;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.shiro.client.demo.confg;
+<span class = "keyword">import</span> io.buji.pac4j.filter.CallbackFilter;
+<span class = "keyword">import</span> io.buji.pac4j.filter.LogoutFilter;
+<span class = "keyword">import</span> io.buji.pac4j.filter.SecurityFilter;
+<span class = "keyword">import</span> io.buji.pac4j.subject.Pac4jSubjectFactory;
+<span class = "keyword">import</span> org.apache.shiro.mgt.DefaultSecurityManager;
+<span class = "keyword">import</span> org.apache.shiro.spring.web.ShiroFilterFactoryBean;
+<span class = "keyword">import</span> org.apache.shiro.spring.web.config.AbstractShiroWebFilterConfiguration;
+<span class = "keyword">import</span> org.apache.shiro.spring.web.config.DefaultShiroFilterChainDefinition;
+<span class = "keyword">import</span> org.apache.shiro.spring.web.config.ShiroFilterChainDefinition;
+<span class = "keyword">import</span> org.pac4j.cas.client.CasClient;
+<span class = "keyword">import</span> org.pac4j.cas.client.rest.CasRestFormClient;
+<span class = "keyword">import</span> org.pac4j.cas.config.CasConfiguration;
+<span class = "keyword">import</span> org.pac4j.cas.config.CasProtocol;
+<span class = "keyword">import</span> org.pac4j.core.client.Clients;
+<span class = "keyword">import</span> org.pac4j.core.config.Config;
+<span class = "keyword">import</span> org.springframework.beans.factory.annotation.Value;
+<span class = "keyword">import</span> org.springframework.context.annotation.Bean;
+<span class = "keyword">import</span> org.springframework.context.annotation.Configuration;
+<span class = "keyword">import</span> javax.servlet.Filter;
+<span class = "keyword">import</span> java.util.HashMap;
+<span class = "keyword">import</span> java.util.Map;
+<span class = "comment">/**
+ * 对shiro的安全配置，是对cas的登录策略进行配置
+ *
+ * @author Carl
+ * @date 2017/9/16
+ * @since 1.0.0
+ */</span>
+@Configuration
+<span class = "keyword">public</span> <span class = "keyword">class</span> ShiroConfiguration <span class = "keyword">extends</span> AbstractShiroWebFilterConfiguration {
+    @Value(<span class = "literal">"#{ @environment['cas.prefixUrl'] ?: null }"</span>)
+    <span class = "keyword">private</span> String prefixUrl;
+    @Value(<span class = "literal">"#{ @environment['cas.loginUrl'] ?: null }"</span>)
+    <span class = "keyword">private</span> String casLoginUrl;
+    @Value(<span class = "literal">"#{ @environment['cas.callbackUrl'] ?: null }"</span>)
+    <span class = "keyword">private</span> String callbackUrl;
+    @Value(<span class = "literal">"#{ @environment['cas.serviceUrl'] ?: null }"</span>)
+    <span class = "keyword">private</span> String serviceUrl;
+    <span class = "comment">/**
+     * cas核心过滤器，把支持的client写上，filter过滤时才会处理，clients必须在casConfig.clients已经注册
+     *
+     * @return
+     */</span>
+    @Bean
+    <span class = "keyword">public</span> Filter casSecurityFilter() {
+        SecurityFilter filter = <span class = "keyword">new</span> SecurityFilter();
+        filter.setClients(<span class = "literal">"cas,rest"</span>);
+        filter.setConfig(casConfig());
+        <span class = "keyword">return</span> filter;
+    }
+    <span class = "comment">/**
+     * 通过rest接口可以获取tgt，获取service ticket，甚至可以获取CasProfile
+     * @return
+     */</span>
+    @Bean
+    <span class = "keyword">protected</span> CasRestFormClient casRestFormClient() {
+        CasRestFormClient casRestFormClient = <span class = "keyword">new</span> CasRestFormClient();
+        casRestFormClient.setConfiguration(casConfiguration());
+        casRestFormClient.setName(<span class = "literal">"rest"</span>);
+        <span class = "keyword">return</span> casRestFormClient;
+    }
+    @Bean
+    <span class = "keyword">protected</span> Clients clients() {
+        //可以设置默认client
+        Clients clients = <span class = "keyword">new</span> Clients();
+        //支持的client全部设置进去
+        clients.setClients(casClient(), casRestFormClient());
+        <span class = "keyword">return</span> clients;
+    }
+    @Bean
+    <span class = "keyword">protected</span> Config casConfig() {
+        Config config = <span class = "keyword">new</span> Config();
+        config.setClients(clients());
+        <span class = "keyword">return</span> config;
+    }
+    <span class = "comment">/**
+     * cas的基本设置，包括或url等等，rest调用协议等
+     * @return
+     */</span>
+    @Bean
+    <span class = "keyword">public</span> CasConfiguration casConfiguration() {
+        CasConfiguration casConfiguration = <span class = "keyword">new</span> CasConfiguration(casLoginUrl);
+        casConfiguration.setProtocol(CasProtocol.CAS30);
+        casConfiguration.setPrefixUrl(prefixUrl);
+        <span class = "keyword">return</span> casConfiguration;
+    }
+    @Bean
+    <span class = "keyword">public</span> CasClient casClient() {
+        CasClient casClient = <span class = "keyword">new</span> CasClient();
+        casClient.setConfiguration(casConfiguration());
+        casClient.setCallbackUrl(callbackUrl);
+        casClient.setName(<span class = "literal">"cas"</span>);
+        <span class = "keyword">return</span> casClient;
+    }
+    <span class = "comment">/**
+     * 路径过滤设置
+     *
+     * @return
+     */</span>
+    @Bean
+    <span class = "keyword">public</span> ShiroFilterChainDefinition shiroFilterChainDefinition() {
+        DefaultShiroFilterChainDefinition definition = <span class = "keyword">new</span> DefaultShiroFilterChainDefinition();
+        definition.addPathDefinition(<span class = "literal">"/callback"</span>, <span class = "literal">"callbackFilter"</span>);
+        definition.addPathDefinition(<span class = "literal">"/logout"</span>, <span class = "literal">"logoutFilter"</span>);
+        definition.addPathDefinition(<span class = "literal">"BLOCKCOMMENT*"</span>, <span class = "literal">"casSecurityFilter"</span>);
+        <span class = "keyword">return</span> definition;
+    }
+    <span class = "comment">/**
+     * 对过滤器进行调整
+     *
+     * @return
+     */</span>
+    @Bean
+    <span class = "keyword">protected</span> ShiroFilterFactoryBean shiroFilterFactoryBean() {
+        //把subject对象设为subjectFactory
+        //由于cas代理了用户，所以必须通过cas进行创建对象
+        ((DefaultSecurityManager) securityManager).setSubjectFactory(<span class = "keyword">new</span> Pac4jSubjectFactory());
+        ShiroFilterFactoryBean filterFactoryBean = <span class = "keyword">super</span>.shiroFilterFactoryBean();
+        filterFactoryBean.setFilters(shiroFilters());
+        <span class = "keyword">return</span> filterFactoryBean;
+    }
+    <span class = "comment">/**
+     * 对shiro的过滤策略进行明确
+     * @return
+     */</span>
+    @Bean
+    <span class = "keyword">protected</span> Map<String, Filter> shiroFilters() {
+        //过滤器设置
+        Map<String, Filter> filters = <span class = "keyword">new</span> HashMap<>();
+        filters.put(<span class = "literal">"casSecurityFilter"</span>, casSecurityFilter());
+        CallbackFilter callbackFilter = <span class = "keyword">new</span> CallbackFilter();
+        callbackFilter.setConfig(casConfig());
+        filters.put(<span class = "literal">"callbackFilter"</span>, callbackFilter);
+        LogoutFilter logoutFilter = <span class = "keyword">new</span> LogoutFilter();
+        logoutFilter.setConfig(casConfig());
+        logoutFilter.setCentralLogout(<span class = "keyword">true</span>);
+        logoutFilter.setDefaultUrl(serviceUrl);
+        filters.put(<span class = "literal">"logoutFilter"</span>, logoutFilter);
+        <span class = "keyword">return</span> filters;
+    }
+}
+<span class = "comment">/*
+ * Copyright 2018 - YZTC
+ * http://www.zxpost.com
+ * 本公司保留所有下述内容的权利。
+ * 本内容为保密信息，仅限本公司内部使用。
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的。
+ */</span>
+<span class = "keyword">package</span> com.carl.auth.shiro.client.demo.exception;
+<span class = "keyword">import</span> io.buji.pac4j.subject.Pac4jPrincipal;
+<span class = "keyword">import</span> java.util.Map;
+<span class = "comment">/**
+ * @author Carl
+ * @date 2017/10/9
+ * @since 1.5.0
+ */</span>
+<span class = "keyword">public</span> <span class = "keyword">class</span> NotBindException <span class = "keyword">extends</span> Exception {
+    <span class = "keyword">private</span> String clientName;
+    <span class = "keyword">private</span> String redirectUrl;
+    <span class = "keyword">private</span> Map<String, Object> attr;
+    <span class = "keyword">private</span> Pac4jPrincipal principal;
+    <span class = "keyword">public</span> Pac4jPrincipal getPrincipal() {
+        <span class = "keyword">return</span> principal;
+    }
+    <span class = "keyword">public</span> NotBindException setPrincipal(Pac4jPrincipal principal) {
+        <span class = "keyword">this</span>.principal = principal;
+        <span class = "keyword">return</span> <span class = "keyword">this</span>;
+    }
+    <span class = "keyword">public</span> String getClientName() {
+        <span class = "keyword">return</span> clientName;
+    }
+    <span class = "keyword">public</span> NotBindException setClientName(String clientName) {
+        <span class = "keyword">this</span>.clientName = clientName;
+        <span class = "keyword">return</span> <span class = "keyword">this</span>;
+    }
+    <span class = "keyword">public</span> String getRedirectUrl() {
+        <span class = "keyword">return</span> redirectUrl;
+    }
+    <span class = "keyword">public</span> NotBindException setRedirectUrl(String redirectUrl) {
+        <span class = "keyword">this</span>.redirectUrl = redirectUrl;
+        <span class = "keyword">return</span> <span class = "keyword">this</span>;
+    }
+    <span class = "keyword">public</span> Map<String, Object> getAttr() {
+        <span class = "keyword">return</span> attr;
+    }
+    <span class = "keyword">public</span> NotBindException setAttr(Map<String, Object> attr) {
+        <span class = "keyword">this</span>.attr = attr;
+        <span class = "keyword">return</span> <span class = "keyword">this</span>;
+    }
+}
+</pre>
+</body>
+</html>

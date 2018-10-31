@@ -1,11 +1,12 @@
 /*
- * Copyright 2018 - YZTC
- * http://www.zxpost.com
- * 本公司保留所有下述内容的权利。
- * 本内容为保密信息，仅限本公司内部使用。
- * 非经本公司书面许可，任何人不得外泄或用于其他目的。
- */
+ * Copyright© 2013-2018 YZTC 
+ * Author zhenghl 
+ * 本公司保留所有下述内容的权利; 
+ * 本内容为保密信息，仅限本公司内部使用; 
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的; 
+*/
 package com.carl.auth.shiro.client.demo.confg;
+
 import io.buji.pac4j.filter.CallbackFilter;
 import io.buji.pac4j.filter.LogoutFilter;
 import io.buji.pac4j.filter.SecurityFilter;
@@ -27,6 +28,7 @@ import org.springframework.context.annotation.Configuration;
 import javax.servlet.Filter;
 import java.util.HashMap;
 import java.util.Map;
+
 /**
  * 对shiro的安全配置，是对cas的登录策略进行配置
  *
@@ -44,6 +46,7 @@ public class ShiroConfiguration extends AbstractShiroWebFilterConfiguration {
     private String callbackUrl;
     @Value("#{ @environment['cas.serviceUrl'] ?: null }")
     private String serviceUrl;
+
     /**
      * cas核心过滤器，把支持的client写上，filter过滤时才会处理，clients必须在casConfig.clients已经注册
      *
@@ -56,8 +59,10 @@ public class ShiroConfiguration extends AbstractShiroWebFilterConfiguration {
         filter.setConfig(casConfig());
         return filter;
     }
+
     /**
      * 通过rest接口可以获取tgt，获取service ticket，甚至可以获取CasProfile
+     * 
      * @return
      */
     @Bean
@@ -67,22 +72,24 @@ public class ShiroConfiguration extends AbstractShiroWebFilterConfiguration {
         casRestFormClient.setName("rest");
         return casRestFormClient;
     }
+
     @Bean
     protected Clients clients() {
-        //可以设置默认client
         Clients clients = new Clients();
-        //支持的client全部设置进去
         clients.setClients(casClient(), casRestFormClient());
         return clients;
     }
+
     @Bean
     protected Config casConfig() {
         Config config = new Config();
         config.setClients(clients());
         return config;
     }
+
     /**
      * cas的基本设置，包括或url等等，rest调用协议等
+     * 
      * @return
      */
     @Bean
@@ -92,6 +99,7 @@ public class ShiroConfiguration extends AbstractShiroWebFilterConfiguration {
         casConfiguration.setPrefixUrl(prefixUrl);
         return casConfiguration;
     }
+
     @Bean
     public CasClient casClient() {
         CasClient casClient = new CasClient();
@@ -100,6 +108,7 @@ public class ShiroConfiguration extends AbstractShiroWebFilterConfiguration {
         casClient.setName("cas");
         return casClient;
     }
+
     /**
      * 路径过滤设置
      *
@@ -113,6 +122,7 @@ public class ShiroConfiguration extends AbstractShiroWebFilterConfiguration {
         definition.addPathDefinition("/**", "casSecurityFilter");
         return definition;
     }
+
     /**
      * 对过滤器进行调整
      *
@@ -120,20 +130,19 @@ public class ShiroConfiguration extends AbstractShiroWebFilterConfiguration {
      */
     @Bean
     protected ShiroFilterFactoryBean shiroFilterFactoryBean() {
-        //把subject对象设为subjectFactory
-        //由于cas代理了用户，所以必须通过cas进行创建对象
         ((DefaultSecurityManager) securityManager).setSubjectFactory(new Pac4jSubjectFactory());
         ShiroFilterFactoryBean filterFactoryBean = super.shiroFilterFactoryBean();
         filterFactoryBean.setFilters(shiroFilters());
         return filterFactoryBean;
     }
+
     /**
      * 对shiro的过滤策略进行明确
+     * 
      * @return
      */
     @Bean
     protected Map<String, Filter> shiroFilters() {
-        //过滤器设置
         Map<String, Filter> filters = new HashMap<>();
         filters.put("casSecurityFilter", casSecurityFilter());
         CallbackFilter callbackFilter = new CallbackFilter();

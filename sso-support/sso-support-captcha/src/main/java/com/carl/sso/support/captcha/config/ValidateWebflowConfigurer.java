@@ -1,11 +1,12 @@
 /*
- * Copyright 2018 - YZTC
- * http://www.zxpost.com
- * 本公司保留所有下述内容的权利。
- * 本内容为保密信息，仅限本公司内部使用。
- * 非经本公司书面许可，任何人不得外泄或用于其他目的。
- */
+ * Copyright© 2013-2018 YZTC 
+ * Author zhenghl 
+ * 本公司保留所有下述内容的权利; 
+ * 本内容为保密信息，仅限本公司内部使用; 
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的; 
+*/
 package com.carl.sso.support.captcha.config;
+
 import org.apereo.cas.configuration.CasConfigurationProperties;
 import org.apereo.cas.web.flow.AbstractCasWebflowConfigurer;
 import org.apereo.cas.web.flow.CasWebflowConstants;
@@ -18,6 +19,7 @@ import org.springframework.webflow.execution.Action;
 import org.springframework.webflow.engine.builder.support.FlowBuilderServices;
 import java.util.ArrayList;
 import java.util.List;
+
 /**
  * @author Carl
  * @date 2017/10/30
@@ -27,14 +29,18 @@ public class ValidateWebflowConfigurer extends AbstractCasWebflowConfigurer {
      * 校验码动作
      */
     public static final String VALIDATE_CAPTCHA_ACTION = "validateCaptchaAction";
-    public ValidateWebflowConfigurer(FlowBuilderServices flowBuilderServices, FlowDefinitionRegistry loginFlowDefinitionRegistry, ApplicationContext applicationContext, CasConfigurationProperties casProperties) {
+
+    public ValidateWebflowConfigurer(FlowBuilderServices flowBuilderServices,
+            FlowDefinitionRegistry loginFlowDefinitionRegistry, ApplicationContext applicationContext,
+            CasConfigurationProperties casProperties) {
         super(flowBuilderServices, loginFlowDefinitionRegistry);
     }
+
     @Override
     protected void doInitialize() throws Exception {
-        //createPasswordResetValidateFlow();
         createLoginValidateValidateFlow();
     }
+
     /**
      * 登录校验流程
      */
@@ -47,24 +53,24 @@ public class ValidateWebflowConfigurer extends AbstractCasWebflowConfigurer {
             currentActions.forEach(a -> state.getActionList().remove(a));
             state.getActionList().add(createEvaluateAction("validateLoginCaptchaAction"));
             currentActions.forEach(a -> state.getActionList().add(a));
-            state.getTransitionSet().add(createTransition("captchaError", CasWebflowConstants.STATE_ID_INIT_LOGIN_FORM));
+            state.getTransitionSet()
+                    .add(createTransition("captchaError", CasWebflowConstants.STATE_ID_INIT_LOGIN_FORM));
         }
     }
+
     /**
      * 发送邮箱前输入验证码流程
      */
     private void createPasswordResetValidateFlow() {
         final Flow flow = getLoginFlow();
         if (flow != null) {
-            ViewState accountInfo = (ViewState) flow.getState(CasWebflowConstants.VIEW_ID_SEND_RESET_PASSWORD_ACCT_INFO);
-            //提交查找用户后，先校验验证码
+            ViewState accountInfo = (ViewState) flow
+                    .getState(CasWebflowConstants.VIEW_ID_SEND_RESET_PASSWORD_ACCT_INFO);
             createTransitionForState(accountInfo, "findAccount", VALIDATE_CAPTCHA_ACTION, true);
-            //校验图片动作
-            ActionState actionState = createActionState(flow, VALIDATE_CAPTCHA_ACTION, createEvaluateAction(VALIDATE_CAPTCHA_ACTION));
-            //失败重新是发送页
+            ActionState actionState = createActionState(flow, VALIDATE_CAPTCHA_ACTION,
+                    createEvaluateAction(VALIDATE_CAPTCHA_ACTION));
             createTransitionForState(actionState, CasWebflowConstants.TRANSITION_ID_RESET_PASSWORD,
                     CasWebflowConstants.VIEW_ID_SEND_RESET_PASSWORD_ACCT_INFO);
-            //发送邮件
             createTransitionForState(actionState, "sendInstructions", "sendInstructions");
         }
     }

@@ -1,10 +1,10 @@
 /*
- * Copyright 2018 - YZTC
- * http://www.zxpost.com
- * 本公司保留所有下述内容的权利。
- * 本内容为保密信息，仅限本公司内部使用。
- * 非经本公司书面许可，任何人不得外泄或用于其他目的。
- */
+ * Copyright© 2013-2018 YZTC 
+ * Author zhenghl 
+ * 本公司保留所有下述内容的权利; 
+ * 本内容为保密信息，仅限本公司内部使用; 
+ * 非经本公司书面许可，任何人不得外泄或用于其他目的; 
+*/
 import com.carl.auth.sso.config.SsoConfigApplication;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,7 +34,5 @@ public class MailTest {
         message.setTo(mail); //自己给自己发送邮件
         message.setSubject("主题：测试邮件");
         message.setText("测试邮件内容");
-        //可以进行测试
-//        mailSender.send(message);
     }
 }
